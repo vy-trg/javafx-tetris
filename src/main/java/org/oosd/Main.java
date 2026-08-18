@@ -63,16 +63,10 @@ public class Main extends Application {
     }
 
     private void showGameScreen() {
-        Pane gamePane = new Pane();
-
-        Button backButton = new Button("Back");
-        backButton.setOnAction(e -> {
-            showMainScreen();
-        });
-
-        gamePane.getChildren().add(backButton);
-
-        root.getChildren().setAll(gamePane);
+        GameScreen gameScreen = new GameScreen(this::showMainScreen);
+        root.getChildren().setAll(gameScreen.getRoot());
+        gameScreen.getRoot().requestFocus();
+        gameScreen.startGame();
     }
 
     private void showConfigScreen() {
