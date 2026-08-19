@@ -122,7 +122,7 @@ public class SplashScreen {
                 loadingBar
         );
 
-        loadingPane.setAlignment(Pos.CENTER_LEFT);
+        loadingPane.setAlignment(Pos.CENTER);
 
 
         // Animate loading bar
@@ -140,24 +140,6 @@ public class SplashScreen {
         );
 
         loadingAnimation.play();
-
-        // PRESS START
-        Label startText = new Label("PRESS START");
-
-        startText.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        startText.setTextFill(Color.WHITE);
-
-        // Blinking animation
-        FadeTransition blink =
-                new FadeTransition(Duration.seconds(0.7), startText);
-
-        blink.setFromValue(1);
-        blink.setToValue(0.2);
-
-        blink.setAutoReverse(true);
-        blink.setCycleCount(Animation.INDEFINITE);
-
-        blink.play();
 
 
         // TEAM MEMBERS
@@ -189,8 +171,7 @@ public class SplashScreen {
                 subtitle,
                 blocks,
                 loadingText,
-                loadingPane,
-                startText
+                loadingPane
         );
 
 
@@ -222,7 +203,7 @@ public class SplashScreen {
 
         // MOVE TO MAIN MENU
         PauseTransition pause =
-                new PauseTransition(Duration.seconds(7));
+                new PauseTransition(Duration.seconds(3));
 
         pause.setOnFinished(event -> MainMenu.show(stage));
 
