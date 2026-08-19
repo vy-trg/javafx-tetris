@@ -13,6 +13,8 @@ import javafx.stage.Stage;
 
 import java.util.Optional;
 
+import org.oosd.GameScreen;
+
 public class MainMenu {
 
     public static void show(Stage stage) {
@@ -98,18 +100,35 @@ public class MainMenu {
         }
 
         // PLAY
-        playButton.setOnAction(event -> {
+        playButton.setOnAction(event ->
+          {
 
             Alert alert = new Alert(
                     Alert.AlertType.INFORMATION,
-                    "The Tetris game will be implemented here."
+                    "Please select 'Yes' or 'No'.",
+                    ButtonType.YES,
+                    ButtonType.NO
             );
 
             alert.setTitle("Play");
-            alert.setHeaderText("Start New Game");
+            alert.setHeaderText("Would You Like to Start a New Game?");
 
-            alert.showAndWait();
-        });
+            Optional<ButtonType> result =
+              alert.showAndWait();
+
+            if (result.isPresent() &&
+              result.get() == ButtonType.YES) {
+
+              GameScreen gameScreen = new GameScreen(() -> MainMenu.show(stage));
+
+              stage.setScene(new Scene(gameScreen.getRoot(), 800, 600));
+              stage.setTitle("Tetris - Game");
+
+              gameScreen.startGame();
+              gameScreen.getRoot().requestFocus();
+            }
+        }
+        );
 
         // CONFIGURATION
         configurationButton.setOnAction(event ->

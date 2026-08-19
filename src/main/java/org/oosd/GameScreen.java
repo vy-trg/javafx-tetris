@@ -105,6 +105,9 @@ public class GameScreen {
         layout.setCenter(boardPane);
 
         root = new StackPane(layout, pausedLabel, gameOverLabel);
+        root.setStyle(
+          "-fx-background-color: linear-gradient(to bottom, #111827, #020617);"
+        );
         StackPane.setAlignment(pausedLabel, Pos.CENTER);
         StackPane.setAlignment(gameOverLabel, Pos.CENTER);
         root.setFocusTraversable(true);
