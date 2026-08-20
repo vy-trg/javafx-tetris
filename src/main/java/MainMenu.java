@@ -102,31 +102,13 @@ public class MainMenu {
         // PLAY
         playButton.setOnAction(event ->
           {
+            GameScreen gameScreen = new GameScreen(() -> MainMenu.show(stage));
 
-            Alert alert = new Alert(
-                    Alert.AlertType.INFORMATION,
-                    "Please select 'Yes' or 'No'.",
-                    ButtonType.YES,
-                    ButtonType.NO
-            );
+            stage.setScene(new Scene(gameScreen.getRoot(), 800, 600));
+            stage.setTitle("Tetris - Game");
 
-            alert.setTitle("Play");
-            alert.setHeaderText("Would You Like to Start a New Game?");
-
-            Optional<ButtonType> result =
-              alert.showAndWait();
-
-            if (result.isPresent() &&
-              result.get() == ButtonType.YES) {
-
-              GameScreen gameScreen = new GameScreen(() -> MainMenu.show(stage));
-
-              stage.setScene(new Scene(gameScreen.getRoot(), 800, 600));
-              stage.setTitle("Tetris - Game");
-
-              gameScreen.startGame();
-              gameScreen.getRoot().requestFocus();
-            }
+            gameScreen.startGame();
+            gameScreen.getRoot().requestFocus();
         }
         );
 
