@@ -82,6 +82,7 @@ public class GameScreen {
         }
 
         scoreLabel = new Label("Score: 0");
+        scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
         pausedLabel = new Label("PAUSED - press P to resume");
         pausedLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #ffcc00; "
                 + "-fx-background-color: rgba(0,0,0,0.7); -fx-padding: 16px;");
