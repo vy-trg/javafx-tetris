@@ -69,6 +69,7 @@ public class GameScreen {
         boardPane = new Pane();
         boardPane.setPrefSize(Board.WIDTH * CELL_SIZE, Board.HEIGHT * CELL_SIZE);
         boardPane.setStyle("-fx-background-color: #111111;");
+        boardPane.setMaxSize(Board.WIDTH * CELL_SIZE, Board.HEIGHT * CELL_SIZE);
 
         for (int r = 0; r < Board.HEIGHT; r++) {
             for (int c = 0; c < Board.WIDTH; c++) {
@@ -103,6 +104,7 @@ public class GameScreen {
         BorderPane layout = new BorderPane();
         layout.setTop(top);
         layout.setCenter(boardPane);
+        BorderPane.setAlignment(boardPane, Pos.CENTER);
 
         root = new StackPane(layout, pausedLabel, gameOverLabel);
         root.setStyle(
@@ -112,7 +114,7 @@ public class GameScreen {
         StackPane.setAlignment(gameOverLabel, Pos.CENTER);
         root.setFocusTraversable(true);
         // Keystroke handling exactly as taught: scene/node.setOnKeyPressed(e -> switch(e.getCode()) ...)
-        root.setOnKeyPressed(this::handleKeyPress);
+        root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPress);
     }
 
     public void startGame() {
