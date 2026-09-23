@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import java.util.Optional;
 
 import org.oosd.GameScreen;
+import org.oosd.TwoPlayerGameScreen;
 
 public class MainMenu {
 
@@ -44,6 +45,7 @@ public class MainMenu {
 
         // BUTTONS
         Button playButton = new Button("PLAY");
+        Button twoPlayerButton = new Button("2-PLAYER (DEMO)");
         Button configurationButton = new Button("CONFIGURATION");
         Button highScoresButton = new Button("HIGH SCORES");
         Button exitButton = new Button("EXIT");
@@ -51,6 +53,7 @@ public class MainMenu {
 
         Button[] buttons = {
                 playButton,
+                twoPlayerButton,
                 configurationButton,
                 highScoresButton,
                 exitButton
@@ -112,6 +115,19 @@ public class MainMenu {
         }
         );
 
+        // 2-PLAYER (DEMO)
+        twoPlayerButton.setOnAction(event ->
+          {
+            TwoPlayerGameScreen twoPlayerScreen = new TwoPlayerGameScreen(() -> MainMenu.show(stage));
+
+            stage.setScene(new Scene(twoPlayerScreen.getRoot(), 1000, 700));
+            stage.setTitle("Tetris - Two-Player");
+
+            twoPlayerScreen.startGame();
+            twoPlayerScreen.getRoot().requestFocus();
+        }
+        );
+
         // CONFIGURATION
         configurationButton.setOnAction(event ->
                 ConfigurationScreen.show(stage)
@@ -163,6 +179,7 @@ public class MainMenu {
                 title,
                 subtitle,
                 playButton,
+                twoPlayerButton,
                 configurationButton,
                 highScoresButton,
                 exitButton

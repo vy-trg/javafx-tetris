@@ -1,0 +1,328 @@
+package org.oosd;
+
+import org.oosd.controller.GameController;
+import org.oosd.controller.TetrominoSequence;
+import org.oosd.model.Board;
+import org.oosd.model.Tetromino;
+
+import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+
+import java.util.Optional;
+
+// Two-Player Mode ("Extend Mode"). Two GameControllers/Boards run side by
+// side, both pulling pieces from the same TetrominoSequence so they always
+// get the same piece order. Controls: Player 1 = , . Space L, Player 2 =
+// arrow keys, 1/2 toggle AI for each player, P pauses both.
+//
+// Not wired to the Configuration Screen's "Extend Mode" checkbox yet since
+// that needs Tasmia's GameConfig singleton - MainMenu has a temporary
+// "2-PLAYER (DEMO)" button for testing until then.
+public class TwoPlayerGameScreen {
+
+    private static final int CELL_SIZE = 24;
+
+    private final Runnable onBackToMenu;
+    private final PlayerPanel player1;
+    private final PlayerPanel player2;
+
+    private final StackPane root;
+    private final Label pausedLabel;
+
+    private AnimationTimer gameLoop;
+    private boolean matchEnded;
+
+    public TwoPlayerGameScreen(Runnable onBackToMenu) {
+        this(onBackToMenu, Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
+    }
+
+    public TwoPlayerGameScreen(Runnable onBackToMenu, int gridWidth, int gridHeight) {
+        this.onBackToMenu = onBackToMenu;
+
+        TetrominoSequence sharedSequence = new TetrominoSequence();
+        player1 = new PlayerPanel("Player 1", gridWidth, gridHeight, sharedSequence);
+        player2 = new PlayerPanel("Player 2", gridWidth, gridHeight, sharedSequence);
+
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> handleBack());
+
+        Label title = new Label("TWO-PLAYER MODE");
+        title.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        BorderPane top = new BorderPane();
+        top.setLeft(title);
+        top.setRight(backButton);
+        BorderPane.setMargin(title, new Insets(8));
+        BorderPane.setMargin(backButton, new Insets(8));
+
+        HBox boards = new HBox(24, player1.root, player2.root);
+        boards.setAlignment(Pos.CENTER);
+
+        BorderPane layout = new BorderPane();
+        layout.setTop(top);
+        layout.setCenter(boards);
+        BorderPane.setAlignment(boards, Pos.CENTER);
+
+        pausedLabel = new Label("PAUSED - press P to resume");
+        pausedLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #ffcc00; "
+                + "-fx-background-color: rgba(0,0,0,0.7); -fx-padding: 16px;");
+        pausedLabel.setVisible(false);
+
+        root = new StackPane(layout, pausedLabel);
+        root.setStyle("-fx-background-color: linear-gradient(to bottom, #111827, #020617);");
+        StackPane.setAlignment(pausedLabel, Pos.CENTER);
+        root.setFocusTraversable(true);
+        root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPress);
+    }
+
+    public void startGame() {
+        matchEnded = false;
+        player1.controller.start();
+        player2.controller.start();
+        player1.reset();
+        player2.reset();
+        pausedLabel.setVisible(false);
+
+        gameLoop = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (!player1.controller.isGameOver()) {
+                    player1.controller.tick(now);
+                }
+                if (!player2.controller.isGameOver()) {
+                    player2.controller.tick(now);
+                }
+                player1.draw();
+                player2.draw();
+                checkForMatchEnd();
+            }
+        };
+        gameLoop.start();
+
+        player1.draw();
+        player2.draw();
+        root.requestFocus();
+    }
+
+    public void stopGame() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+    }
+
+    private void handleKeyPress(KeyEvent event) {
+        switch (event.getCode()) {
+            case COMMA -> player1.controller.handleMoveLeft();
+            case PERIOD -> player1.controller.handleMoveRight();
+            case SPACE -> player1.controller.handleSoftDrop();
+            case L -> player1.controller.handleRotate();
+            case LEFT -> player2.controller.handleMoveLeft();
+            case RIGHT -> player2.controller.handleMoveRight();
+            case DOWN -> player2.controller.handleSoftDrop();
+            case UP -> player2.controller.handleRotate();
+            case DIGIT1 -> player1.toggleAi();
+            case DIGIT2 -> player2.toggleAi();
+            case P -> {
+                player1.controller.handlePauseKey();
+                player2.controller.handlePauseKey();
+            }
+            default -> { /* ignore */ }
+        }
+        pausedLabel.setVisible(player1.controller.isPaused() || player2.controller.isPaused());
+        player1.draw();
+        player2.draw();
+    }
+
+    private void checkForMatchEnd() {
+        if (matchEnded) {
+            return;
+        }
+        if (player1.controller.isGameOver() && player2.controller.isGameOver()) {
+            matchEnded = true;
+            stopGame();
+            // same reason as GameScreen.onGameOver() - can't showAndWait() mid-pulse
+            Platform.runLater(this::announceResult);
+        }
+    }
+
+    private void announceResult() {
+        int score1 = player1.controller.getScore();
+        int score2 = player2.controller.getScore();
+
+        String verdict;
+        if (score1 > score2) {
+            verdict = "Player 1 wins!";
+        } else if (score2 > score1) {
+            verdict = "Player 2 wins!";
+        } else {
+            verdict = "It's a tie!";
+        }
+
+        Alert result = new Alert(AlertType.INFORMATION);
+        result.setTitle("Match Over");
+        result.setHeaderText(verdict);
+        result.setContentText("Player 1: " + score1 + " points\nPlayer 2: " + score2 + " points");
+        result.showAndWait();
+
+        promptNameAndRecord("Player 1", score1);
+        promptNameAndRecord("Player 2", score2);
+    }
+
+    private void promptNameAndRecord(String defaultName, int score) {
+        TextInputDialog dialog = new TextInputDialog(defaultName);
+        dialog.setTitle("Game Over");
+        dialog.setHeaderText(defaultName + " - final score: " + score);
+        dialog.setContentText("Enter name for the high score list:");
+
+        Optional<String> name = dialog.showAndWait();
+        name.ifPresent(playerName ->
+                System.out.println("[TODO high score persistence] " + playerName + " scored " + score));
+    }
+
+    private void handleBack() {
+        boolean wasRunning = !matchEnded;
+        if (wasRunning) {
+            if (!player1.controller.isPaused()) {
+                player1.controller.handlePauseKey();
+            }
+            if (!player2.controller.isPaused()) {
+                player2.controller.handlePauseKey();
+            }
+        }
+
+        Alert confirm = new Alert(AlertType.CONFIRMATION);
+        confirm.setTitle("Stop Game");
+        confirm.setHeaderText("Are you sure you want to stop the current match?");
+        ButtonType yes = new ButtonType("Yes");
+        ButtonType no = new ButtonType("No");
+        confirm.getButtonTypes().setAll(yes, no);
+
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isPresent() && result.get() == yes) {
+            stopGame();
+            onBackToMenu.run();
+        } else if (wasRunning) {
+            if (!player1.controller.isGameOver()) {
+                player1.controller.handlePauseKey();
+            }
+            if (!player2.controller.isGameOver()) {
+                player2.controller.handlePauseKey();
+            }
+        }
+        pausedLabel.setVisible(player1.controller.isPaused() || player2.controller.isPaused());
+    }
+
+    public StackPane getRoot() {
+        return root;
+    }
+
+    // One player's board + score + AI status + game-over overlay.
+    private static class PlayerPanel {
+
+        private final GameController controller;
+        private final int gridWidth;
+        private final int gridHeight;
+
+        private final StackPane root;
+        private final Rectangle[][] cellRects;
+        private final Label scoreLabel;
+        private final Label aiStatusLabel;
+        private final Label gameOverLabel;
+
+        PlayerPanel(String name, int gridWidth, int gridHeight, TetrominoSequence sharedSequence) {
+            this.gridWidth = gridWidth;
+            this.gridHeight = gridHeight;
+            this.controller = new GameController(gridWidth, gridHeight, sharedSequence);
+            this.cellRects = new Rectangle[gridHeight][gridWidth];
+
+            Pane boardPane = new Pane();
+            boardPane.setPrefSize(gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
+            boardPane.setMaxSize(gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
+            boardPane.setStyle("-fx-background-color: #111111;");
+
+            for (int r = 0; r < gridHeight; r++) {
+                for (int c = 0; c < gridWidth; c++) {
+                    Rectangle cell = new Rectangle(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                    cell.setFill(Color.web("#111111"));
+                    cell.setStroke(Color.web("#333333"));
+                    cellRects[r][c] = cell;
+                    boardPane.getChildren().add(cell);
+                }
+            }
+
+            Label nameLabel = new Label(name);
+            nameLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #aaaaaa; -fx-font-weight: bold;");
+
+            scoreLabel = new Label("Score: 0");
+            scoreLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            aiStatusLabel = new Label("AI PLAY");
+            aiStatusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #33ccff; -fx-font-weight: bold;");
+            aiStatusLabel.setVisible(false);
+
+            gameOverLabel = new Label("GAME OVER");
+            gameOverLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: white; "
+                    + "-fx-background-color: rgba(0,0,0,0.8); -fx-padding: 12px;");
+            gameOverLabel.setVisible(false);
+
+            VBox header = new VBox(2, nameLabel, scoreLabel, aiStatusLabel);
+            header.setAlignment(Pos.CENTER);
+
+            VBox column = new VBox(6, header, boardPane);
+            column.setAlignment(Pos.CENTER);
+
+            root = new StackPane(column, gameOverLabel);
+            StackPane.setAlignment(gameOverLabel, Pos.CENTER);
+        }
+
+        void reset() {
+            gameOverLabel.setVisible(false);
+            aiStatusLabel.setVisible(controller.isAiEnabled());
+        }
+
+        void toggleAi() {
+            controller.setAiEnabled(!controller.isAiEnabled());
+            aiStatusLabel.setVisible(controller.isAiEnabled());
+        }
+
+        void draw() {
+            Color[][] grid = controller.getBoard().getGrid();
+            for (int r = 0; r < gridHeight; r++) {
+                for (int c = 0; c < gridWidth; c++) {
+                    Color locked = grid[r][c];
+                    cellRects[r][c].setFill(locked != null ? locked : Color.web("#111111"));
+                }
+            }
+
+            Tetromino currentPiece = controller.getCurrentPiece();
+            if (currentPiece != null) {
+                for (int[] cell : currentPiece.getCurrentCells()) {
+                    int r = currentPiece.getRow() + cell[0];
+                    int c = currentPiece.getCol() + cell[1];
+                    if (r >= 0 && r < gridHeight && c >= 0 && c < gridWidth) {
+                        cellRects[r][c].setFill(currentPiece.getType().getColor());
+                    }
+                }
+            }
+
+            scoreLabel.setText("Score: " + controller.getScore());
+            gameOverLabel.setVisible(controller.isGameOver());
+        }
+    }
+}
