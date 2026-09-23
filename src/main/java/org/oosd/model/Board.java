@@ -7,10 +7,31 @@ import java.util.List;
 
 public class Board {
 
-    public static final int WIDTH = 10;
-    public static final int HEIGHT = 20;
+    /**
+     * Default board size - what you get from {@code new Board()}, and the
+     * defaults shown on the Configuration Screen's spinners.
+     * Dynamic Grid Size Adjustment (Vy): the board no longer has to be this
+     * size - {@link #Board(int, int)} builds any width/height the player
+     * chose (spinner ranges: width 5-15, height 15-30), and everything else
+     * (GameController, GameScreen, AIPlayer) reads the size back from the
+     * Board instance instead of assuming a fixed 10x20.
+     */
+    public static final int DEFAULT_WIDTH = 10;
+    public static final int DEFAULT_HEIGHT = 20;
 
-    private final Color[][] grid = new Color[HEIGHT][WIDTH];
+    private final int width;
+    private final int height;
+    private final Color[][] grid;
+
+    public Board() {
+        this(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    public Board(int width, int height) {
+        this.width = width;
+        this.height = height;
+        this.grid = new Color[height][width];
+    }
 
     /**
      * Record type usage (Milestone 1 rubric requirement).
@@ -29,7 +50,7 @@ public class Board {
         for (int[] cell : cells) {
             int r = piece.getRow() + cell[0] + rowOffset;
             int c = piece.getCol() + cell[1] + colOffset;
-            if (c < 0 || c >= WIDTH || r >= HEIGHT) {
+            if (c < 0 || c >= width || r >= height) {
                 return false;
             }
             if (r >= 0 && grid[r][c] != null) {
@@ -43,7 +64,7 @@ public class Board {
         for (int[] cell : piece.getCurrentCells()) {
             int r = piece.getRow() + cell[0];
             int c = piece.getCol() + cell[1];
-            if (r >= 0 && r < HEIGHT && c >= 0 && c < WIDTH) {
+            if (r >= 0 && r < height && c >= 0 && c < width) {
                 grid[r][c] = piece.getType().getColor();
             }
         }
@@ -56,7 +77,7 @@ public class Board {
     public RowClearResult clearFullRows() {
         List<Integer> fullRows = new ArrayList<>();
 
-        for (int r = 0; r < HEIGHT; r++) {
+        for (int r = 0; r < height; r++) {
             boolean full = true;
             for (Color cell : grid[r]) {
                 if (cell == null) {
@@ -73,7 +94,7 @@ public class Board {
             for (int r = rowToClear; r > 0; r--) {
                 grid[r] = grid[r - 1].clone();
             }
-            grid[0] = new Color[WIDTH];
+            grid[0] = new Color[width];
         }
 
         int cleared = fullRows.size();
@@ -91,6 +112,14 @@ public class Board {
 
     public Color[][] getGrid() {
         return grid;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
     public void reset() {

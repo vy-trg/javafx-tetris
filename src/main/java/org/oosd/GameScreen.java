@@ -1,10 +1,11 @@
 package org.oosd;
 
+import org.oosd.controller.GameController;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
-import org.oosd.model.TetrominoFactory;
 
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -12,67 +13,62 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.util.Optional;
 
-/**
- * Game Play screen (rubric items 15, 16, 17).
- * Uses the same building blocks taught in lecture (JavaFX Animation and
- * Screen Navigation): a Pane of Rectangle shapes for the board grid, and
- * an AnimationTimer as the game loop - instead of Canvas/GraphicsContext
- * or Timeline, which were not covered in class.
- *
- * Wiring into Main.java's showGameScreen():
- *
- *   private void showGameScreen() {
- *       GameScreen gameScreen = new GameScreen(this::showMainScreen);
- *       root.getChildren().setAll(gameScreen.getRoot());
- *       gameScreen.getRoot().requestFocus();
- *       gameScreen.startGame();
- *   }
- */
+// Game Play screen (rubric items 15, 16, 17) - View only. All the game
+// rules/state now live in GameController; this class just draws whatever
+// it reports and turns key presses / timer ticks into calls on it.
 public class GameScreen {
 
     private static final int CELL_SIZE = 24;
-    private static final long FALL_INTERVAL_NANOS = 600_000_000L; // 600ms per row, as taught with AnimationTimer's handle(long now)
 
     private final Runnable onBackToMenu;
+    private final GameController controller;
+    private final int gridWidth;
+    private final int gridHeight;
 
     private final StackPane root;
     private final Pane boardPane;
-    private final Rectangle[][] cellRects = new Rectangle[Board.HEIGHT][Board.WIDTH];
+    private final Rectangle[][] cellRects;
     private final Label scoreLabel;
+    private final Label aiStatusLabel;
     private final Label pausedLabel;
     private final Label gameOverLabel;
 
-    private final Board board = new Board();
-    private Tetromino currentPiece;
-
     private AnimationTimer gameLoop;
-    private long lastFallTime = 0;
-    private boolean paused = false;
-    private boolean gameOver = false;
-    private int score = 0;
 
     public GameScreen(Runnable onBackToMenu) {
+        this(onBackToMenu, Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
+    }
+
+    // gridWidth/gridHeight come from the Configuration Screen spinners
+    // (5-15 x 15-30) - everything below is built from these instead of a
+    // fixed 10x20 size.
+    public GameScreen(Runnable onBackToMenu, int gridWidth, int gridHeight) {
         this.onBackToMenu = onBackToMenu;
+        this.gridWidth = gridWidth;
+        this.gridHeight = gridHeight;
+        this.controller = new GameController(gridWidth, gridHeight);
+        this.cellRects = new Rectangle[gridHeight][gridWidth];
 
-        // Pane + Rectangle grid, exactly as shown in the "Pane – Free
-        // placement container" / "Shape – Drawing graphics" lecture example.
+        controller.setOnGameOver(this::onGameOver);
+
         boardPane = new Pane();
-        boardPane.setPrefSize(Board.WIDTH * CELL_SIZE, Board.HEIGHT * CELL_SIZE);
+        boardPane.setPrefSize(gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
+        boardPane.setMaxSize(gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
         boardPane.setStyle("-fx-background-color: #111111;");
-        boardPane.setMaxSize(Board.WIDTH * CELL_SIZE, Board.HEIGHT * CELL_SIZE);
 
-        for (int r = 0; r < Board.HEIGHT; r++) {
-            for (int c = 0; c < Board.WIDTH; c++) {
+        for (int r = 0; r < gridHeight; r++) {
+            for (int c = 0; c < gridWidth; c++) {
                 Rectangle cell = new Rectangle(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
                 cell.setFill(Color.web("#111111"));
                 cell.setStroke(Color.web("#333333"));
@@ -83,6 +79,11 @@ public class GameScreen {
 
         scoreLabel = new Label("Score: 0");
         scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        aiStatusLabel = new Label("AI PLAY - press A to stop");
+        aiStatusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #33ccff; -fx-font-weight: bold;");
+        aiStatusLabel.setVisible(false);
+
         pausedLabel = new Label("PAUSED - press P to resume");
         pausedLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #ffcc00; "
                 + "-fx-background-color: rgba(0,0,0,0.7); -fx-padding: 16px;");
@@ -96,10 +97,12 @@ public class GameScreen {
         Button backButton = new Button("Back");
         backButton.setOnAction(e -> handleBack());
 
+        VBox scoreBox = new VBox(2, scoreLabel, aiStatusLabel);
+
         BorderPane top = new BorderPane();
-        top.setLeft(scoreLabel);
+        top.setLeft(scoreBox);
         top.setRight(backButton);
-        BorderPane.setMargin(scoreLabel, new Insets(8));
+        BorderPane.setMargin(scoreBox, new Insets(8));
         BorderPane.setMargin(backButton, new Insets(8));
 
         BorderPane layout = new BorderPane();
@@ -114,32 +117,20 @@ public class GameScreen {
         StackPane.setAlignment(pausedLabel, Pos.CENTER);
         StackPane.setAlignment(gameOverLabel, Pos.CENTER);
         root.setFocusTraversable(true);
-        // Keystroke handling exactly as taught: scene/node.setOnKeyPressed(e -> switch(e.getCode()) ...)
         root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPress);
     }
 
     public void startGame() {
-        board.reset();
-        score = 0;
-        gameOver = false;
+        controller.start();
         gameOverLabel.setVisible(false);
-        scoreLabel.setText("Score: 0");
-        spawnNewPiece();
+        pausedLabel.setVisible(false);
+        aiStatusLabel.setVisible(controller.isAiEnabled());
 
-        // AnimationTimer - "JavaFX's simplest way to create an animation or
-        // game loop", as taught. handle(now) is called ~60 times a second;
-        // we only act once enough time has passed for one row-step.
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (lastFallTime == 0) {
-                    lastFallTime = now;
-                    return;
-                }
-                if (!paused && !gameOver && now - lastFallTime >= FALL_INTERVAL_NANOS) {
-                    moveDown();
-                    lastFallTime = now;
-                }
+                controller.tick(now);
+                draw();
             }
         };
         gameLoop.start();
@@ -154,81 +145,51 @@ public class GameScreen {
         }
     }
 
-    private void spawnNewPiece() {
-        currentPiece = TetrominoFactory.createRandom(Board.WIDTH / 2 - 2);
-        if (!board.isValidPosition(currentPiece, 0, 0, currentPiece.getCurrentCells())) {
-            gameOver = true;
-            gameOverLabel.setVisible(true);
-            stopGame();
+    private void handleKeyPress(KeyEvent event) {
+        switch (event.getCode()) {
+            case P -> controller.handlePauseKey();
+            case LEFT -> controller.handleMoveLeft();
+            case RIGHT -> controller.handleMoveRight();
+            case DOWN -> controller.handleSoftDrop();
+            case UP -> controller.handleRotate();
+            case A -> {
+                controller.setAiEnabled(!controller.isAiEnabled());
+                aiStatusLabel.setVisible(controller.isAiEnabled());
+            }
+            default -> { /* ignore */ }
         }
-    }
-
-    private void moveDown() {
-        if (board.isValidPosition(currentPiece, 1, 0, currentPiece.getCurrentCells())) {
-            currentPiece.moveDown();
-        } else {
-            lockAndClear();
-        }
+        pausedLabel.setVisible(controller.isPaused());
         draw();
     }
 
-    private void lockAndClear() {
-        board.lockPiece(currentPiece);
-        Board.RowClearResult result = board.clearFullRows();
-        if (result.rowsCleared() > 0) {
-            score += result.pointsEarned();
-            scoreLabel.setText("Score: " + score);
-        }
-        spawnNewPiece();
+    private void onGameOver() {
+        gameOverLabel.setVisible(true);
+        stopGame();
+
+        // showAndWait() isn't allowed while the AnimationTimer's pulse is
+        // still running - this callback fires from inside that pulse, so
+        // the dialog has to wait for the next JavaFX event loop turn.
+        Platform.runLater(() -> {
+            TextInputDialog dialog = new TextInputDialog("Player");
+            dialog.setTitle("Game Over");
+            dialog.setHeaderText("Final score: " + controller.getScore());
+            dialog.setContentText("Enter your name for the high score list:");
+
+            Optional<String> name = dialog.showAndWait();
+            name.ifPresent(playerName -> recordHighScore(playerName, controller.getScore()));
+        });
     }
 
-    private void handleKeyPress(KeyEvent event) {
-        if (event.getCode() == KeyCode.P) {
-            togglePause();
-            return;
-        }
-        if (paused || gameOver) {
-            return;
-        }
-        switch (event.getCode()) {
-            case LEFT -> tryMove(-1);
-            case RIGHT -> tryMove(1);
-            case DOWN -> moveDown();
-            case UP -> tryRotate();
-            default -> { /* ignore */ }
-        }
+    // TODO(Tasmia): wire this to real high-score persistence once it exists
+    private void recordHighScore(String playerName, int finalScore) {
+        System.out.println("[TODO high score persistence] " + playerName + " scored " + finalScore);
     }
 
-    private void tryMove(int colDelta) {
-        if (board.isValidPosition(currentPiece, 0, colDelta, currentPiece.getCurrentCells())) {
-            if (colDelta < 0) {
-                currentPiece.moveLeft();
-            } else {
-                currentPiece.moveRight();
-            }
-            draw();
-        }
-    }
-
-    private void tryRotate() {
-        int[][] rotated = currentPiece.rotateClockwise();
-        if (board.isValidPosition(currentPiece, 0, 0, rotated)) {
-            currentPiece.applyRotation();
-            draw();
-        }
-    }
-
-    private void togglePause() {
-        paused = !paused;
-        pausedLabel.setVisible(paused);
-    }
-
-    /**
-     * FR14-16: confirm before stopping the current game.
-     */
     private void handleBack() {
-        boolean wasPaused = paused;
-        paused = true; // freeze gameplay while the dialog is open
+        boolean wasPlaying = !controller.isPaused() && !controller.isGameOver();
+        if (wasPlaying) {
+            controller.handlePauseKey(); // freeze gameplay while the dialog is open
+        }
 
         Alert confirm = new Alert(AlertType.CONFIRMATION);
         confirm.setTitle("Stop Game");
@@ -241,38 +202,36 @@ public class GameScreen {
         if (result.isPresent() && result.get() == yes) {
             stopGame();
             onBackToMenu.run();
-        } else {
-            paused = wasPaused; // FR15: cancel - game continues as before
+        } else if (wasPlaying) {
+            controller.handlePauseKey(); // FR15: cancel - resume where we left off
         }
+        pausedLabel.setVisible(controller.isPaused());
     }
 
-    /**
-     * Redraws the board by updating each Rectangle's fill color - the same
-     * "Shape" building block used throughout the lecture, just reused as a
-     * grid instead of a single ball.
-     */
     private void draw() {
-        Color[][] grid = board.getGrid();
-        for (int r = 0; r < Board.HEIGHT; r++) {
-            for (int c = 0; c < Board.WIDTH; c++) {
+        Color[][] grid = controller.getBoard().getGrid();
+        for (int r = 0; r < gridHeight; r++) {
+            for (int c = 0; c < gridWidth; c++) {
                 Color locked = grid[r][c];
                 cellRects[r][c].setFill(locked != null ? locked : Color.web("#111111"));
             }
         }
 
+        Tetromino currentPiece = controller.getCurrentPiece();
         if (currentPiece != null) {
             for (int[] cell : currentPiece.getCurrentCells()) {
                 int r = currentPiece.getRow() + cell[0];
                 int c = currentPiece.getCol() + cell[1];
-                if (r >= 0 && r < Board.HEIGHT && c >= 0 && c < Board.WIDTH) {
+                if (r >= 0 && r < gridHeight && c >= 0 && c < gridWidth) {
                     cellRects[r][c].setFill(currentPiece.getType().getColor());
                 }
             }
         }
+
+        scoreLabel.setText("Score: " + controller.getScore());
     }
 
     public StackPane getRoot() {
         return root;
     }
 }
-

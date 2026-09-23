@@ -44,6 +44,10 @@ public abstract class Tetromino implements Rotatable {
         return col;
     }
 
+    public int getRotationState() {
+        return rotationState;
+    }
+
     public void moveDown() {
         row++;
     }
