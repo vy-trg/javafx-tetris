@@ -32,6 +32,12 @@ public class GameController {
     // so GameScreen finds out the moment the game ends and can pop the name-entry dialog
     private Runnable onGameOver = () -> { };
 
+    //sound hooks, gamescreen wires these to SoundManager so events trigger sound effects
+    private Runnable onMove = () -> { };
+    private Runnable onRotate = () -> { };
+    private Runnable onLock = () -> { };
+    private java.util.function.IntConsumer onLinesCleared = rows -> { };
+
     public GameController() {
         this(Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
     }
@@ -136,6 +142,7 @@ public class GameController {
             } else {
                 currentPiece.moveRight();
             }
+            onMove.run();
         }
     }
 
@@ -143,14 +150,17 @@ public class GameController {
         int[][] rotated = currentPiece.rotateClockwise();
         if (board.isValidPosition(currentPiece, 0, 0, rotated)) {
             currentPiece.applyRotation();
+            onRotate.run();
         }
     }
 
     private void lockAndClear() {
         board.lockPiece(currentPiece);
+        onLock.run();
         Board.RowClearResult result = board.clearFullRows();
         if (result.rowsCleared() > 0) {
             score += result.pointsEarned();
+            onLinesCleared.accept(result.rowsCleared());
         }
         spawnNewPiece();
     }
@@ -191,5 +201,21 @@ public class GameController {
 
     public void setOnGameOver(Runnable onGameOver) {
         this.onGameOver = onGameOver;
+    }
+
+    public void setOnMove(Runnable onMove) {
+        this.onMove = onMove;
+    }
+
+    public void setOnRotate(Runnable onRotate) {
+        this.onRotate = onRotate;
+    }
+
+    public void setOnLock(Runnable onLock) {
+        this.onLock = onLock;
+    }
+
+    public void setOnLinesCleared(java.util.function.IntConsumer onLinesCleared) {
+        this.onLinesCleared = onLinesCleared;
     }
 }

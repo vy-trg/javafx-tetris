@@ -12,6 +12,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
+import org.oosd.audio.SoundManager;
+
 public class ConfigurationScreen {
 
     public static void show(Stage stage) {
@@ -94,8 +96,14 @@ public class ConfigurationScreen {
                 new CheckBox("Extend Mode");
 
 
-        musicCheckBox.setSelected(true);
-        soundCheckBox.setSelected(true);
+        musicCheckBox.setSelected(SoundManager.getInstance().isMusicEnabled());
+        soundCheckBox.setSelected(SoundManager.getInstance().isSfxEnabled());
+
+        musicCheckBox.setOnAction(event ->
+                SoundManager.getInstance().setMusicEnabled(musicCheckBox.isSelected()));
+
+        soundCheckBox.setOnAction(event ->
+                SoundManager.getInstance().setSfxEnabled(soundCheckBox.isSelected()));
 
 
         CheckBox[] checkBoxes = {

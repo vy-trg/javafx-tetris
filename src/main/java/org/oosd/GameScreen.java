@@ -1,5 +1,6 @@
 package org.oosd;
 
+import org.oosd.audio.SoundManager;
 import org.oosd.controller.GameController;
 import org.oosd.model.Board;
 import org.oosd.model.Tetromino;
@@ -61,6 +62,10 @@ public class GameScreen {
         this.cellRects = new Rectangle[gridHeight][gridWidth];
 
         controller.setOnGameOver(this::onGameOver);
+        controller.setOnMove(() -> SoundManager.getInstance().playEffect(SoundManager.Sound.MOVE));
+        controller.setOnRotate(() -> SoundManager.getInstance().playEffect(SoundManager.Sound.ROTATE));
+        controller.setOnLock(() -> SoundManager.getInstance().playEffect(SoundManager.Sound.LOCK));
+        controller.setOnLinesCleared(rows -> SoundManager.getInstance().playEffect(SoundManager.Sound.LINE_CLEAR));
 
         boardPane = new Pane();
         boardPane.setPrefSize(gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
@@ -112,7 +117,7 @@ public class GameScreen {
 
         root = new StackPane(layout, pausedLabel, gameOverLabel);
         root.setStyle(
-          "-fx-background-color: linear-gradient(to bottom, #111827, #020617);"
+                "-fx-background-color: linear-gradient(to bottom, #111827, #020617);"
         );
         StackPane.setAlignment(pausedLabel, Pos.CENTER);
         StackPane.setAlignment(gameOverLabel, Pos.CENTER);
@@ -134,6 +139,7 @@ public class GameScreen {
             }
         };
         gameLoop.start();
+        SoundManager.getInstance().playMusic();
 
         draw();
         root.requestFocus();
@@ -143,11 +149,33 @@ public class GameScreen {
         if (gameLoop != null) {
             gameLoop.stop();
         }
+        SoundManager.getInstance().stopMusic();
     }
 
     private void handleKeyPress(KeyEvent event) {
         switch (event.getCode()) {
-            case P -> controller.handlePauseKey();
+            case P -> {
+                controller.handlePauseKey();
+                if (controller.isPaused()) {
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.PAUSE);
+                    SoundManager.getInstance().pauseMusic();
+                } else {
+                    SoundManager.getInstance().resumeMusic();
+                }
+            }
+            case M -> {
+                SoundManager soundManager = SoundManager.getInstance();
+                boolean musicEnabled = !soundManager.isMusicEnabled();
+                soundManager.setMusicEnabled(musicEnabled);
+                // Do not play music while the game is paused.
+                if (musicEnabled && controller.isPaused()) {
+                    soundManager.pauseMusic();
+                }
+            }
+            case S -> {
+                SoundManager soundManager = SoundManager.getInstance();
+                soundManager.setSfxEnabled(!soundManager.isSfxEnabled());
+            }
             case LEFT -> controller.handleMoveLeft();
             case RIGHT -> controller.handleMoveRight();
             case DOWN -> controller.handleSoftDrop();
@@ -164,6 +192,7 @@ public class GameScreen {
 
     private void onGameOver() {
         gameOverLabel.setVisible(true);
+        SoundManager.getInstance().playEffect(SoundManager.Sound.GAME_OVER);
         stopGame();
 
         // showAndWait() isn't allowed while the AnimationTimer's pulse is
@@ -189,6 +218,7 @@ public class GameScreen {
         boolean wasPlaying = !controller.isPaused() && !controller.isGameOver();
         if (wasPlaying) {
             controller.handlePauseKey(); // freeze gameplay while the dialog is open
+            SoundManager.getInstance().pauseMusic();
         }
 
         Alert confirm = new Alert(AlertType.CONFIRMATION);
@@ -204,6 +234,7 @@ public class GameScreen {
             onBackToMenu.run();
         } else if (wasPlaying) {
             controller.handlePauseKey(); // FR15: cancel - resume where we left off
+            SoundManager.getInstance().resumeMusic();
         }
         pausedLabel.setVisible(controller.isPaused());
     }

@@ -1,5 +1,6 @@
 package org.oosd;
 
+import org.oosd.audio.SoundManager;
 import org.oosd.controller.GameController;
 import org.oosd.controller.TetrominoSequence;
 import org.oosd.model.Board;
@@ -114,6 +115,7 @@ public class TwoPlayerGameScreen {
             }
         };
         gameLoop.start();
+        SoundManager.getInstance().playMusic();
 
         player1.draw();
         player2.draw();
@@ -124,6 +126,7 @@ public class TwoPlayerGameScreen {
         if (gameLoop != null) {
             gameLoop.stop();
         }
+        SoundManager.getInstance().stopMusic();
     }
 
     private void handleKeyPress(KeyEvent event) {
@@ -141,6 +144,26 @@ public class TwoPlayerGameScreen {
             case P -> {
                 player1.controller.handlePauseKey();
                 player2.controller.handlePauseKey();
+
+                if (player1.controller.isPaused() || player2.controller.isPaused()) {
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.PAUSE);
+                    SoundManager.getInstance().pauseMusic();
+                } else {
+                    SoundManager.getInstance().resumeMusic();
+                }
+            }
+            case M -> {
+                SoundManager soundManager = SoundManager.getInstance();
+                boolean musicEnabled = !soundManager.isMusicEnabled();
+                soundManager.setMusicEnabled(musicEnabled);
+                // Do not play music while the game is paused.
+                if (musicEnabled && (player1.controller.isPaused() || player2.controller.isPaused())) {
+                    soundManager.pauseMusic();
+                }
+            }
+            case S -> {
+                SoundManager soundManager = SoundManager.getInstance();
+                soundManager.setSfxEnabled(!soundManager.isSfxEnabled());
             }
             default -> { /* ignore */ }
         }
@@ -198,6 +221,7 @@ public class TwoPlayerGameScreen {
     private void handleBack() {
         boolean wasRunning = !matchEnded;
         if (wasRunning) {
+            SoundManager.getInstance().pauseMusic();
             if (!player1.controller.isPaused()) {
                 player1.controller.handlePauseKey();
             }
@@ -224,6 +248,7 @@ public class TwoPlayerGameScreen {
             if (!player2.controller.isGameOver()) {
                 player2.controller.handlePauseKey();
             }
+            SoundManager.getInstance().resumeMusic();
         }
         pausedLabel.setVisible(player1.controller.isPaused() || player2.controller.isPaused());
     }
@@ -249,6 +274,16 @@ public class TwoPlayerGameScreen {
             this.gridWidth = gridWidth;
             this.gridHeight = gridHeight;
             this.controller = new GameController(gridWidth, gridHeight, sharedSequence);
+            this.controller.setOnGameOver(() ->
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.GAME_OVER));
+            this.controller.setOnMove(() ->
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.MOVE));
+            this.controller.setOnRotate(() ->
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.ROTATE));
+            this.controller.setOnLock(() ->
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.LOCK));
+            this.controller.setOnLinesCleared(rows ->
+                    SoundManager.getInstance().playEffect(SoundManager.Sound.LINE_CLEAR));
             this.cellRects = new Rectangle[gridHeight][gridWidth];
 
             Pane boardPane = new Pane();
