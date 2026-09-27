@@ -21,6 +21,8 @@ public class GameController {
     private Board board;
     private Tetromino currentPiece;
     private int score;
+    private int linesCleared;
+    private int level;
     private long lastFallTime;
 
     private final AIPlayer aiPlayer = new AIPlayer();
@@ -56,6 +58,8 @@ public class GameController {
     public void start() {
         board = new Board(width, height);
         score = 0;
+        linesCleared = 0;
+        level = 1;
         lastFallTime = 0;
         lastAiActionTime = 0;
         pieceIndex = 0;
@@ -160,6 +164,8 @@ public class GameController {
         Board.RowClearResult result = board.clearFullRows();
         if (result.rowsCleared() > 0) {
             score += result.pointsEarned();
+            linesCleared += result.rowsCleared();
+            level = 1 + linesCleared / 10; // level up every 10 lines
             onLinesCleared.accept(result.rowsCleared());
         }
         spawnNewPiece();
@@ -189,6 +195,14 @@ public class GameController {
 
     public int getScore() {
         return score;
+    }
+
+    public int getLinesCleared() {
+        return linesCleared;
+    }
+
+    public int getLevel() {
+        return level;
     }
 
     public boolean isPaused() {

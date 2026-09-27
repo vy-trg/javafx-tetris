@@ -41,6 +41,8 @@ public class GameScreen {
     private final Pane boardPane;
     private final Rectangle[][] cellRects;
     private final Label scoreLabel;
+    private final Label levelLabel;
+    private final Label linesLabel;
     private final Label aiStatusLabel;
     private final Label pausedLabel;
     private final Label gameOverLabel;
@@ -85,6 +87,12 @@ public class GameScreen {
         scoreLabel = new Label("Score: 0");
         scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;");
 
+        levelLabel = new Label("Level: 1");
+        levelLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+
+        linesLabel = new Label("Lines: 0");
+        linesLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+
         aiStatusLabel = new Label("AI PLAY - press A to stop");
         aiStatusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #33ccff; -fx-font-weight: bold;");
         aiStatusLabel.setVisible(false);
@@ -102,7 +110,7 @@ public class GameScreen {
         Button backButton = new Button("Back");
         backButton.setOnAction(e -> handleBack());
 
-        VBox scoreBox = new VBox(2, scoreLabel, aiStatusLabel);
+        VBox scoreBox = new VBox(2, scoreLabel, levelLabel, linesLabel, aiStatusLabel);
 
         BorderPane top = new BorderPane();
         top.setLeft(scoreBox);
@@ -260,6 +268,8 @@ public class GameScreen {
         }
 
         scoreLabel.setText("Score: " + controller.getScore());
+        levelLabel.setText("Level: " + controller.getLevel());
+        linesLabel.setText("Lines: " + controller.getLinesCleared());
     }
 
     public StackPane getRoot() {

@@ -267,6 +267,8 @@ public class TwoPlayerGameScreen {
         private final StackPane root;
         private final Rectangle[][] cellRects;
         private final Label scoreLabel;
+        private final Label levelLabel;
+        private final Label linesLabel;
         private final Label aiStatusLabel;
         private final Label gameOverLabel;
 
@@ -307,6 +309,12 @@ public class TwoPlayerGameScreen {
             scoreLabel = new Label("Score: 0");
             scoreLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-font-weight: bold;");
 
+            levelLabel = new Label("Level: 1");
+            levelLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+
+            linesLabel = new Label("Lines: 0");
+            linesLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-font-weight: bold;");
+
             aiStatusLabel = new Label("AI PLAY");
             aiStatusLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #33ccff; -fx-font-weight: bold;");
             aiStatusLabel.setVisible(false);
@@ -316,7 +324,7 @@ public class TwoPlayerGameScreen {
                     + "-fx-background-color: rgba(0,0,0,0.8); -fx-padding: 12px;");
             gameOverLabel.setVisible(false);
 
-            VBox header = new VBox(2, nameLabel, scoreLabel, aiStatusLabel);
+            VBox header = new VBox(2, nameLabel, scoreLabel, levelLabel, linesLabel, aiStatusLabel);
             header.setAlignment(Pos.CENTER);
 
             VBox column = new VBox(6, header, boardPane);
@@ -357,6 +365,8 @@ public class TwoPlayerGameScreen {
             }
 
             scoreLabel.setText("Score: " + controller.getScore());
+            levelLabel.setText("Level: " + controller.getLevel());
+            linesLabel.setText("Lines: " + controller.getLinesCleared());
             gameOverLabel.setVisible(controller.isGameOver());
         }
     }
