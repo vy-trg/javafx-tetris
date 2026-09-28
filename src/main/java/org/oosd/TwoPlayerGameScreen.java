@@ -1,6 +1,7 @@
 package org.oosd;
 
 import org.oosd.audio.SoundManager;
+import org.oosd.controller.ExternalPlayer;
 import org.oosd.controller.GameController;
 import org.oosd.controller.TetrominoSequence;
 import org.oosd.model.Board;
@@ -31,7 +32,8 @@ import java.util.Optional;
 // side, both pulling pieces from the same TetrominoSequence so they always
 // get the same piece order. Controls: Player 1 = , . Space L, Player 2 =
 // arrow keys, 1/2 toggle AI for each player, P pauses both.
-//
+
+//if only Player 1 is human, arrow keys drive Player 1 too. AI/External players ignore keys
 public class TwoPlayerGameScreen {
 
     private static final int CELL_SIZE = 24;
@@ -45,6 +47,7 @@ public class TwoPlayerGameScreen {
 
     private AnimationTimer gameLoop;
     private boolean matchEnded;
+    private boolean externalFailureHandled;
 
     public TwoPlayerGameScreen(Runnable onBackToMenu) {
         this(onBackToMenu, Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
@@ -99,6 +102,7 @@ public class TwoPlayerGameScreen {
 
     public void startGame() {
         matchEnded = false;
+        externalFailureHandled = false;
         player1.controller.start();
         player2.controller.start();
         player1.reset();
@@ -116,6 +120,9 @@ public class TwoPlayerGameScreen {
                 }
                 player1.draw();
                 player2.draw();
+                if (checkForExternalFailure()) {
+                    return;
+                }
                 checkForMatchEnd();
             }
         };
@@ -132,18 +139,60 @@ public class TwoPlayerGameScreen {
             gameLoop.stop();
         }
         SoundManager.getInstance().stopMusic();
+        player1.controller.shutdownExternal();
+        player2.controller.shutdownExternal();
+    }
+
+    //if either TetrisServer connection drops mid-game, end match, tell player, and go back to  menu.
+    private boolean checkForExternalFailure() {
+        if (externalFailureHandled || matchEnded) {
+            return externalFailureHandled;
+        }
+        String reason = null;
+        if (player1.controller.isExternalFailed()) {
+            reason = "Player 1: " + player1.controller.getExternalFailureReason();
+        } else if (player2.controller.isExternalFailed()) {
+            reason = "Player 2: " + player2.controller.getExternalFailureReason();
+        }
+        if (reason == null) {
+            return false;
+        }
+        externalFailureHandled = true;
+        matchEnded = true;
+        stopGame();
+        String message = reason;
+        //can't showAndWait() from inside animation pulse
+        Platform.runLater(() -> {
+            Alert error = new Alert(AlertType.ERROR);
+            error.setTitle("External Player Disconnected");
+            error.setHeaderText("TetrisServer connection lost");
+            error.setContentText(message + "\n\nThe game has been stopped. Make sure TetrisServer.jar "
+                    + "is running on " + ExternalPlayer.HOST + ":" + ExternalPlayer.PORT + " and try again.");
+            error.showAndWait();
+            onBackToMenu.run();
+        });
+        return true;
     }
 
     private void handleKeyPress(KeyEvent event) {
+        //only human-controlled player reacts to keyboard
+        //AI/external player driven by own logic, stray key presses don't nudge it
+        boolean p1Human = player1.isHumanControlled();
+        boolean p2Human = player2.isHumanControlled();
+        //arrow keys are Player 2's keys, but when Player 2 is AI/External and
+        //player 1 human, arrows drive Player 1 so human never stuck using , . Space or L keys
+        PlayerPanel arrowTarget = (!p2Human && p1Human) ? player1 : player2;
+        boolean arrowsActive = arrowTarget.isHumanControlled();
+
         switch (event.getCode()) {
-            case COMMA -> player1.controller.handleMoveLeft();
-            case PERIOD -> player1.controller.handleMoveRight();
-            case SPACE -> player1.controller.handleSoftDrop();
-            case L -> player1.controller.handleRotate();
-            case LEFT -> player2.controller.handleMoveLeft();
-            case RIGHT -> player2.controller.handleMoveRight();
-            case DOWN -> player2.controller.handleSoftDrop();
-            case UP -> player2.controller.handleRotate();
+            case COMMA -> { if (p1Human) player1.controller.handleMoveLeft(); }
+            case PERIOD -> { if (p1Human) player1.controller.handleMoveRight(); }
+            case SPACE -> { if (p1Human) player1.controller.handleSoftDrop(); }
+            case L -> { if (p1Human) player1.controller.handleRotate(); }
+            case LEFT -> { if (arrowsActive) arrowTarget.controller.handleMoveLeft(); }
+            case RIGHT -> { if (arrowsActive) arrowTarget.controller.handleMoveRight(); }
+            case DOWN -> { if (arrowsActive) arrowTarget.controller.handleSoftDrop(); }
+            case UP -> { if (arrowsActive) arrowTarget.controller.handleRotate(); }
             case DIGIT1 -> player1.toggleAi();
             case DIGIT2 -> player2.toggleAi();
             case P -> {
@@ -341,18 +390,28 @@ public class TwoPlayerGameScreen {
 
         void reset() {
             gameOverLabel.setVisible(false);
-            aiStatusLabel.setVisible(controller.isAiEnabled());
+            aiStatusLabel.setVisible(controller.isAiEnabled() || controller.isExternalEnabled());
+        }
+
+        boolean isHumanControlled() {
+            return !controller.isAiEnabled() && !controller.isExternalEnabled();
         }
 
         void toggleAi() {
+            if (controller.isExternalEnabled()) {
+                return; //external player driven by server, not 1/2 keys
+            }
             controller.setAiEnabled(!controller.isAiEnabled());
             aiStatusLabel.setVisible(controller.isAiEnabled());
         }
         void applyConfig(int startingLevel, ConfigurationManager.PlayerType type) {
             controller.setStartingLevel(startingLevel);
             boolean aiEnabled = (type == ConfigurationManager.PlayerType.AI);
+            boolean externalEnabled = (type == ConfigurationManager.PlayerType.EXTERNAL);
             controller.setAiEnabled(aiEnabled);
-            aiStatusLabel.setVisible(aiEnabled);
+            controller.setExternalEnabled(externalEnabled);
+            aiStatusLabel.setText(externalEnabled ? "EXTERNAL PLAY" : "AI PLAY");
+            aiStatusLabel.setVisible(aiEnabled || externalEnabled);
         }
 
         void draw() {

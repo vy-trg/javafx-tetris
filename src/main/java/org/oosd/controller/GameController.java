@@ -30,6 +30,10 @@ public class GameController {
     private boolean aiEnabled;
     private long lastAiActionTime;
 
+    //external Player - piece is placed by TetrisServer.jar instead of human/AIPlayer
+    private ExternalPlayer externalPlayer;
+    private boolean externalEnabled;
+
     private GameState state = PlayingState.INSTANCE;
 
     // so GameScreen finds out the moment the game ends and can pop the name-entry dialog
@@ -65,6 +69,9 @@ public class GameController {
         lastAiActionTime = 0;
         pieceIndex = 0;
         aiPlayer.reset();
+        if (externalPlayer != null) {
+            externalPlayer.reset();
+        }
         state = PlayingState.INSTANCE;
         spawnNewPiece();
     }
@@ -78,6 +85,51 @@ public class GameController {
                 lastAiActionTime = now;
             }
         }
+
+        if (externalEnabled && !isPaused() && !isGameOver()) {
+            if (lastAiActionTime == 0 || now - lastAiActionTime >= AI_ACTION_INTERVAL_NANOS) {
+                externalPlayer.takeTurn(this, now);
+                lastAiActionTime = now;
+            }
+        }
+    }
+
+    public void setExternalEnabled(boolean enabled) {
+        this.externalEnabled = enabled;
+        if (enabled) {
+            if (externalPlayer == null) {
+                externalPlayer = new ExternalPlayer();
+            }
+            externalPlayer.reset();
+            lastAiActionTime = 0;
+        }
+    }
+
+    public boolean isExternalEnabled() {
+        return externalEnabled;
+    }
+
+    // True once TetrisServer stopped answering during a game.
+    public boolean isExternalFailed() {
+        return externalEnabled && externalPlayer != null && externalPlayer.hasFailed();
+    }
+
+    public String getExternalFailureReason() {
+        return externalPlayer == null ? "" : externalPlayer.getFailureReason();
+    }
+
+    // Stops background networking - call when leaving the game screen.
+    public void shutdownExternal() {
+        if (externalPlayer != null) {
+            externalPlayer.shutdown();
+            externalPlayer = null;
+        }
+        externalEnabled = false;
+    }
+
+    // Look-ahead for the server; only known when pieces come from a shared sequence.
+    public org.oosd.model.TetrominoType getNextPieceType() {
+        return (sharedSequence != null) ? sharedSequence.get(pieceIndex) : null;
     }
 
     public void setAiEnabled(boolean enabled) {

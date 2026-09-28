@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.oosd.GameScreen;
 import org.oosd.TwoPlayerGameScreen;
 import org.oosd.ConfigurationManager;
+import org.oosd.controller.ExternalPlayer;
 
 public class MainMenu {
 
@@ -154,6 +155,22 @@ public class MainMenu {
                     ? config.getPlayer1Type() : ConfigurationManager.PlayerType.HUMAN;
             ConfigurationManager.PlayerType p2Type = config.isExtendMode()
                     ? config.getPlayer2Type() : ConfigurationManager.PlayerType.HUMAN;
+
+            //external players driven by TetrisServer.jar, it must already be running
+            if ((p1Type == ConfigurationManager.PlayerType.EXTERNAL
+                    || p2Type == ConfigurationManager.PlayerType.EXTERNAL)
+                    && !ExternalPlayer.isServerReachable()) {
+                Alert error = new Alert(Alert.AlertType.ERROR);
+                error.setTitle("External Player");
+                error.setHeaderText("TetrisServer is not running");
+                error.setContentText("A player is set to External, but nothing is listening on "
+                        + ExternalPlayer.HOST + ":" + ExternalPlayer.PORT + ".\n\n"
+                        + "Start it with:  java -jar TetrisServer.jar\n"
+                        + "then press Two-Player again.");
+                error.showAndWait();
+                MainMenu.show(stage);
+                return;
+            }
 
             TwoPlayerGameScreen twoPlayerScreen = new TwoPlayerGameScreen(
                     () -> MainMenu.show(stage),

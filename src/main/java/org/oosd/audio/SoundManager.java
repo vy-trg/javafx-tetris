@@ -37,6 +37,9 @@ public final class SoundManager {
     private MediaPlayer musicPlayer;
     private boolean musicLoadAttempted = false;
 
+    //true only between playMusic() (game start) and stopMusic() (game end)
+    private boolean musicSessionActive = false;
+
     private final Map<Sound, AudioClip> clips = new EnumMap<>(Sound.class);
 
     private SoundManager() {
@@ -51,7 +54,7 @@ public final class SoundManager {
         this.musicEnabled = enabled;
         if (!enabled) {
             pauseMusic();
-        } else if (musicPlayer != null) {
+        } else if (musicSessionActive && musicPlayer != null) {
             musicPlayer.play();
         }
     }
@@ -70,6 +73,7 @@ public final class SoundManager {
 
     //background music
     public void playMusic() {
+        musicSessionActive = true;
         if (!musicEnabled) {
             return;
         }
@@ -92,6 +96,7 @@ public final class SoundManager {
     }
 
     public void stopMusic() {
+        musicSessionActive = false;
         if (musicPlayer != null) {
             musicPlayer.stop();
         }

@@ -1,11 +1,11 @@
 {
-  "width": 15,
-  "height": 25,
-  "level": 3,
-  "musicEnabled": false,
+  "width": 10,
+  "height": 20,
+  "level": 1,
+  "musicEnabled": true,
   "soundEnabled": true,
-  "aiPlay": true,
+  "aiPlay": false,
   "extendMode": true,
-  "player1Type": "AI",
-  "player2Type": "HUMAN"
+  "player1Type": "HUMAN",
+  "player2Type": "AI"
 }
