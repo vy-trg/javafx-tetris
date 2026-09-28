@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.oosd.GameScreen;
 import org.oosd.TwoPlayerGameScreen;
+import org.oosd.ConfigurationManager;
 
 public class MainMenu {
 
@@ -103,17 +104,46 @@ public class MainMenu {
         }
 
         // PLAY
-        playButton.setOnAction(event ->
-          {
-            GameScreen gameScreen = new GameScreen(() -> MainMenu.show(stage));
+        playButton.setOnAction(event -> {
 
-            stage.setScene(new Scene(gameScreen.getRoot(), 800, 600));
+            ConfigurationManager config =
+                    ConfigurationManager.getInstance();
+
+            GameScreen gameScreen =
+                    new GameScreen(
+                            () -> MainMenu.show(stage),
+                            config.getWidth(),
+                            config.getHeight(),
+                            config.getLevel(),
+                            config.isAiPlay()
+                    );
+
+            int windowWidth =
+                    Math.max(
+                            800,
+                            config.getWidth() * 24 + 260
+                    );
+
+            int windowHeight =
+                    Math.max(
+                            600,
+                            config.getHeight() * 24 + 100
+                    );
+
+            stage.setScene(
+                    new Scene(
+                            gameScreen.getRoot(),
+                            windowWidth,
+                            windowHeight
+                    )
+            );
+
             stage.setTitle("Tetris - Game");
 
             gameScreen.startGame();
+
             gameScreen.getRoot().requestFocus();
-        }
-        );
+        });
 
         // 2-PLAYER (DEMO)
         twoPlayerButton.setOnAction(event ->

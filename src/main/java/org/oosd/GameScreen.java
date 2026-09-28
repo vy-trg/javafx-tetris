@@ -48,9 +48,37 @@ public class GameScreen {
     private final Label gameOverLabel;
 
     private AnimationTimer gameLoop;
-
     public GameScreen(Runnable onBackToMenu) {
-        this(onBackToMenu, Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
+
+        this(
+                onBackToMenu,
+                Board.DEFAULT_WIDTH,
+                Board.DEFAULT_HEIGHT,
+                1,
+                false
+        );
+    }
+
+    public GameScreen(
+            Runnable onBackToMenu,
+            int gridWidth,
+            int gridHeight,
+            int startingLevel,
+            boolean aiEnabled) {
+
+        this(
+                onBackToMenu,
+                gridWidth,
+                gridHeight
+        );
+
+        controller.setStartingLevel(
+                startingLevel
+        );
+
+        controller.setAiEnabled(
+                aiEnabled
+        );
     }
 
     // gridWidth/gridHeight come from the Configuration Screen spinners
@@ -217,9 +245,17 @@ public class GameScreen {
         });
     }
 
-    // TODO(Tasmia): wire this to real high-score persistence once it exists
-    private void recordHighScore(String playerName, int finalScore) {
-        System.out.println("[TODO high score persistence] " + playerName + " scored " + finalScore);
+    // TODO(Tasmia): wire this to real high-score persistence once it exists - done
+    private void recordHighScore(
+            String playerName,
+            int finalScore) {
+
+        HighScoreManager
+                .getInstance()
+                .addScore(
+                        playerName,
+                        finalScore
+                );
     }
 
     private void handleBack() {

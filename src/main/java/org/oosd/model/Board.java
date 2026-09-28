@@ -104,8 +104,8 @@ public class Board {
         int points = switch (cleared) {
             case 1 -> 100;
             case 2 -> 300;
-            case 3 -> 500;
-            default -> 800;
+            case 3 -> 600;
+            default -> 1000;
         };
         return new RowClearResult(cleared, points);
     }

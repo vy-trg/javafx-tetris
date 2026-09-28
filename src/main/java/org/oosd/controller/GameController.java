@@ -23,6 +23,7 @@ public class GameController {
     private int score;
     private int linesCleared;
     private int level;
+    private int startingLevel = 1;
     private long lastFallTime;
 
     private final AIPlayer aiPlayer = new AIPlayer();
@@ -59,7 +60,7 @@ public class GameController {
         board = new Board(width, height);
         score = 0;
         linesCleared = 0;
-        level = 1;
+        level = startingLevel;
         lastFallTime = 0;
         lastAiActionTime = 0;
         pieceIndex = 0;
@@ -84,6 +85,11 @@ public class GameController {
         if (enabled) {
             aiPlayer.reset();
             lastAiActionTime = 0;
+        }
+    }
+    public void setStartingLevel(int startingLevel) {
+        if (startingLevel >= 1 && startingLevel <= 10) {
+            this.startingLevel = startingLevel;
         }
     }
 
@@ -165,7 +171,7 @@ public class GameController {
         if (result.rowsCleared() > 0) {
             score += result.pointsEarned();
             linesCleared += result.rowsCleared();
-            level = 1 + linesCleared / 10; // level up every 10 lines
+            level = startingLevel + linesCleared / 10; // level up every 10 lines
             onLinesCleared.accept(result.rowsCleared());
         }
         spawnNewPiece();

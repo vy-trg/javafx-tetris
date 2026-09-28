@@ -203,7 +203,7 @@ public class SplashScreen {
 
         // MOVE TO MAIN MENU
         PauseTransition pause =
-                new PauseTransition(Duration.seconds(3));
+                new PauseTransition(Duration.seconds(5));
 
         pause.setOnFinished(event -> MainMenu.show(stage));
 
