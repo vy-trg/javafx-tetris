@@ -32,9 +32,6 @@ import java.util.Optional;
 // get the same piece order. Controls: Player 1 = , . Space L, Player 2 =
 // arrow keys, 1/2 toggle AI for each player, P pauses both.
 //
-// Not wired to the Configuration Screen's "Extend Mode" checkbox yet since
-// that needs Tasmia's GameConfig singleton - MainMenu has a temporary
-// "2-PLAYER (DEMO)" button for testing until then.
 public class TwoPlayerGameScreen {
 
     private static final int CELL_SIZE = 24;
@@ -90,6 +87,14 @@ public class TwoPlayerGameScreen {
         StackPane.setAlignment(pausedLabel, Pos.CENTER);
         root.setFocusTraversable(true);
         root.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPress);
+    }
+    public TwoPlayerGameScreen(Runnable onBackToMenu, int gridWidth, int gridHeight,
+                               int startingLevel,
+                               ConfigurationManager.PlayerType player1Type,
+                               ConfigurationManager.PlayerType player2Type) {
+        this(onBackToMenu, gridWidth, gridHeight);
+        player1.applyConfig(startingLevel, player1Type);
+        player2.applyConfig(startingLevel, player2Type);
     }
 
     public void startGame() {
@@ -215,7 +220,7 @@ public class TwoPlayerGameScreen {
 
         Optional<String> name = dialog.showAndWait();
         name.ifPresent(playerName ->
-                System.out.println("[TODO high score persistence] " + playerName + " scored " + score));
+                HighScoreManager.getInstance().addScore(playerName, score));
     }
 
     private void handleBack() {
@@ -342,6 +347,12 @@ public class TwoPlayerGameScreen {
         void toggleAi() {
             controller.setAiEnabled(!controller.isAiEnabled());
             aiStatusLabel.setVisible(controller.isAiEnabled());
+        }
+        void applyConfig(int startingLevel, ConfigurationManager.PlayerType type) {
+            controller.setStartingLevel(startingLevel);
+            boolean aiEnabled = (type == ConfigurationManager.PlayerType.AI);
+            controller.setAiEnabled(aiEnabled);
+            aiStatusLabel.setVisible(aiEnabled);
         }
 
         void draw() {

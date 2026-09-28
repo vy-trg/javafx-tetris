@@ -46,7 +46,7 @@ public class MainMenu {
 
         // BUTTONS
         Button playButton = new Button("PLAY");
-        Button twoPlayerButton = new Button("2-PLAYER (DEMO)");
+        Button twoPlayerButton = new Button("2-PLAYER");
         Button configurationButton = new Button("CONFIGURATION");
         Button highScoresButton = new Button("HIGH SCORES");
         Button exitButton = new Button("EXIT");
@@ -146,18 +146,33 @@ public class MainMenu {
         });
 
         // 2-PLAYER (DEMO)
-        twoPlayerButton.setOnAction(event ->
-          {
-            TwoPlayerGameScreen twoPlayerScreen = new TwoPlayerGameScreen(() -> MainMenu.show(stage));
+        twoPlayerButton.setOnAction(event -> {
 
-            stage.setScene(new Scene(twoPlayerScreen.getRoot(), 1000, 700));
+            ConfigurationManager config = ConfigurationManager.getInstance();
+
+            ConfigurationManager.PlayerType p1Type = config.isExtendMode()
+                    ? config.getPlayer1Type() : ConfigurationManager.PlayerType.HUMAN;
+            ConfigurationManager.PlayerType p2Type = config.isExtendMode()
+                    ? config.getPlayer2Type() : ConfigurationManager.PlayerType.HUMAN;
+
+            TwoPlayerGameScreen twoPlayerScreen = new TwoPlayerGameScreen(
+                    () -> MainMenu.show(stage),
+                    config.getWidth(),
+                    config.getHeight(),
+                    config.getLevel(),
+                    p1Type,
+                    p2Type
+            );
+
+            int windowWidth = Math.max(1000, config.getWidth() * 2 * 24 + 320);
+            int windowHeight = Math.max(700, config.getHeight() * 24 + 150);
+
+            stage.setScene(new Scene(twoPlayerScreen.getRoot(), windowWidth, windowHeight));
             stage.setTitle("Tetris - Two-Player");
 
             twoPlayerScreen.startGame();
             twoPlayerScreen.getRoot().requestFocus();
-        }
-        );
-
+        });
         // CONFIGURATION
         configurationButton.setOnAction(event ->
                 ConfigurationScreen.show(stage)
