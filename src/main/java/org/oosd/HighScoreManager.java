@@ -55,7 +55,10 @@ public class HighScoreManager {
 
     public List<ScoreEntry> getTopScores() {
 
-        return new ArrayList<>(scores);
+        return scores.stream()
+                .sorted(Comparator.comparingInt(ScoreEntry::score).reversed())
+                .limit(10)
+                .toList();
     }
 
     public void clearScores() {
