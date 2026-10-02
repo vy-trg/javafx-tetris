@@ -156,20 +156,22 @@ public class MainMenu {
             ConfigurationManager.PlayerType p2Type = config.isExtendMode()
                     ? config.getPlayer2Type() : ConfigurationManager.PlayerType.HUMAN;
 
-            //external players driven by TetrisServer.jar, it must already be running
+            //external players are driven by TetrisServer.jar. If not running yet, warn but let game start, player has no control until the server started (then resumes).
             if ((p1Type == ConfigurationManager.PlayerType.EXTERNAL
                     || p2Type == ConfigurationManager.PlayerType.EXTERNAL)
                     && !ExternalPlayer.isServerReachable()) {
-                Alert error = new Alert(Alert.AlertType.ERROR);
-                error.setTitle("External Player");
-                error.setHeaderText("TetrisServer is not running");
-                error.setContentText("A player is set to External, but nothing is listening on "
-                        + ExternalPlayer.HOST + ":" + ExternalPlayer.PORT + ".\n\n"
-                        + "Start it with:  java -jar TetrisServer.jar\n"
-                        + "then press Two-Player again.");
-                error.showAndWait();
-                MainMenu.show(stage);
-                return;
+                Alert warn = new Alert(Alert.AlertType.WARNING,
+                        "A player is set to External, but nothing is listening on "
+                                + ExternalPlayer.HOST + ":" + ExternalPlayer.PORT + ".\n\n"
+                                + "The External player will have no control until you start it.\n\n"
+                                + "Start the game anyway?",
+                        javafx.scene.control.ButtonType.OK, javafx.scene.control.ButtonType.CANCEL);
+                warn.setTitle("External Player");
+                warn.setHeaderText("TetrisServer is not running");
+                if (warn.showAndWait().orElse(javafx.scene.control.ButtonType.CANCEL)
+                        != javafx.scene.control.ButtonType.OK) {
+                    return;
+                }
             }
 
             TwoPlayerGameScreen twoPlayerScreen = new TwoPlayerGameScreen(

@@ -47,7 +47,6 @@ public class TwoPlayerGameScreen {
 
     private AnimationTimer gameLoop;
     private boolean matchEnded;
-    private boolean externalFailureHandled;
 
     public TwoPlayerGameScreen(Runnable onBackToMenu) {
         this(onBackToMenu, Board.DEFAULT_WIDTH, Board.DEFAULT_HEIGHT);
@@ -102,7 +101,6 @@ public class TwoPlayerGameScreen {
 
     public void startGame() {
         matchEnded = false;
-        externalFailureHandled = false;
         player1.controller.start();
         player2.controller.start();
         player1.reset();
@@ -120,9 +118,7 @@ public class TwoPlayerGameScreen {
                 }
                 player1.draw();
                 player2.draw();
-                if (checkForExternalFailure()) {
-                    return;
-                }
+                updateServerWarning();
                 checkForMatchEnd();
             }
         };
@@ -143,35 +139,11 @@ public class TwoPlayerGameScreen {
         player2.controller.shutdownExternal();
     }
 
-    //if either TetrisServer connection drops mid-game, end match, tell player, and go back to  menu.
-    private boolean checkForExternalFailure() {
-        if (externalFailureHandled || matchEnded) {
-            return externalFailureHandled;
-        }
-        String reason = null;
-        if (player1.controller.isExternalFailed()) {
-            reason = "Player 1: " + player1.controller.getExternalFailureReason();
-        } else if (player2.controller.isExternalFailed()) {
-            reason = "Player 2: " + player2.controller.getExternalFailureReason();
-        }
-        if (reason == null) {
-            return false;
-        }
-        externalFailureHandled = true;
-        matchEnded = true;
-        stopGame();
-        String message = reason;
-        //can't showAndWait() from inside animation pulse
-        Platform.runLater(() -> {
-            Alert error = new Alert(AlertType.ERROR);
-            error.setTitle("External Player Disconnected");
-            error.setHeaderText("TetrisServer connection lost");
-            error.setContentText(message + "\n\nThe game has been stopped. Make sure TetrisServer.jar "
-                    + "is running on " + ExternalPlayer.HOST + ":" + ExternalPlayer.PORT + " and try again.");
-            error.showAndWait();
-            onBackToMenu.run();
-        });
-        return true;
+    //TetrisServer down, external player gets no control (piece just falls) and status label turns red
+    //cleared by itself moment ExternalPlayer sees server again, control resumes with it.
+    private void updateServerWarning() {
+        player1.setOffline(player1.controller.isExternalDisconnected());
+        player2.setOffline(player2.controller.isExternalDisconnected());
     }
 
     private void handleKeyPress(KeyEvent event) {
@@ -391,6 +363,16 @@ public class TwoPlayerGameScreen {
         void reset() {
             gameOverLabel.setVisible(false);
             aiStatusLabel.setVisible(controller.isAiEnabled() || controller.isExternalEnabled());
+        }
+
+        //red "no control" status while server down, normal external play otherwise
+        void setOffline(boolean offline) {
+            if (!controller.isExternalEnabled()) {
+                return;
+            }
+            aiStatusLabel.setText(offline ? "EXTERNAL OFFLINE - NO CONTROL" : "EXTERNAL PLAY");
+            aiStatusLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: "
+                    + (offline ? "#ef4444" : "#33ccff") + ";");
         }
 
         boolean isHumanControlled() {

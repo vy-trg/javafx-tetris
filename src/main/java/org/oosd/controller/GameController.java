@@ -109,13 +109,13 @@ public class GameController {
         return externalEnabled;
     }
 
-    // True once TetrisServer stopped answering during a game.
-    public boolean isExternalFailed() {
-        return externalEnabled && externalPlayer != null && externalPlayer.hasFailed();
+    //true while TetrisServer is unreachable, player has no control, resumes by itself when it is back.
+    public boolean isExternalDisconnected() {
+        return externalEnabled && externalPlayer != null && externalPlayer.isDisconnected();
     }
 
-    public String getExternalFailureReason() {
-        return externalPlayer == null ? "" : externalPlayer.getFailureReason();
+    public String getExternalDisconnectReason() {
+        return externalPlayer == null ? "" : externalPlayer.getDisconnectReason();
     }
 
     // Stops background networking - call when leaving the game screen.

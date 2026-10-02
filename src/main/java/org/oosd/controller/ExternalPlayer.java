@@ -29,11 +29,20 @@ public class ExternalPlayer {
     private static final int CONNECT_TIMEOUT_MS = 1000;
     private static final int READ_TIMEOUT_MS = 3000;
     private static final long HEARTBEAT_INTERVAL_NANOS = 1_000_000_000L;
+    //while offline, probe faster so control resumes almost the instant the server is started
+    private static final long RECONNECT_INTERVAL_NANOS = 250_000_000L;
 
     private static final Pattern OP_X = Pattern.compile("\"opX\"\\s*:\\s*(-?\\d+)");
     private static final Pattern OP_ROTATE = Pattern.compile("\"opRotate\"\\s*:\\s*(-?\\d+)");
 
     private record Move(int x, int rotate) {
+    }
+
+    //server answered but reply unusable, not a connection problem so does not count as offline
+    private static class ProtocolException extends IOException {
+        ProtocolException(String message) {
+            super(message);
+        }
     }
 
     private record Target(int rotationState, int col) {
@@ -45,9 +54,12 @@ public class ExternalPlayer {
         return thread;
     });
 
-    private volatile boolean failed;
-    private volatile String failureReason = "";
+    //false while TetrisServer unreachable, game keeps running but piece is not steered.
+    //flips back to true by itself as soon as the server answers again.
+    private volatile boolean connected = true;
+    private volatile String disconnectReason = "";
     private volatile int generation;
+    private boolean wasConnected = true; //FX-thread copy, used to spot the offline -> online edge
 
     private Tetromino planningForPiece;
     private CompletableFuture<Move> pending;
@@ -74,12 +86,12 @@ public class ExternalPlayer {
         }
     }
 
-    public boolean hasFailed() {
-        return failed;
+    public boolean isDisconnected() {
+        return !connected;
     }
 
-    public String getFailureReason() {
-        return failureReason;
+    public String getDisconnectReason() {
+        return disconnectReason;
     }
 
     public void reset() {
@@ -89,8 +101,9 @@ public class ExternalPlayer {
         target = null;
         lastHeartbeat = 0;
         heartbeatInFlight = false;
-        failed = false;
-        failureReason = "";
+        connected = true;
+        wasConnected = true;
+        disconnectReason = "";
     }
 
     public void shutdown() {
@@ -100,10 +113,20 @@ public class ExternalPlayer {
 
     //one step per call, gamecontroller calls this on same short timer as AI
     public void takeTurn(GameController controller, long now) {
-        if (failed) {
-            return;
+        heartbeat(now); //keep running while offline too, that's how we notice server came back
+
+        boolean nowConnected = connected;
+        if (!nowConnected) {
+            wasConnected = false;
+            return; //server down, warn (see isDisconnected) and leave piece alone, no control
         }
-        heartbeat(now);
+        if (!wasConnected) {
+            //server came back mid-game, drop stale plan so current piece is re-planne now
+            wasConnected = true;
+            planningForPiece = null;
+            pending = null;
+            target = null;
+        }
 
         Tetromino piece = controller.getCurrentPiece();
         if (piece == null) {
@@ -124,15 +147,15 @@ public class ExternalPlayer {
             try {
                 move = pending.get();
             } catch (Exception e) {
-                fail("Lost connection to TetrisServer (" + rootMessage(e) + ").");
-                return;
-            } finally {
+                //connection lost (already flagged by worker) or unusable reply, no move for this piece
                 pending = null;
+                target = null;
+                return;
             }
+            pending = null;
             target = toTarget(piece, move);
             if (target == null) {
-                fail("TetrisServer sent a move that does not fit this piece.");
-                return;
+                return; //move does not fit this piece, ignore it, next piece asks again
             }
         }
 
@@ -151,27 +174,35 @@ public class ExternalPlayer {
         }
     }
 
-    //periodically open/close a connection so server that dies while a piece falling is noticed, not only when next piece spawns.
+    //periodically open/close connection so server that dies while a piece is falling is noticed, and so server started later is noticed straight away (faster polling while offline).
     private void heartbeat(long now) {
-        if (heartbeatInFlight || (lastHeartbeat != 0 && now - lastHeartbeat < HEARTBEAT_INTERVAL_NANOS)) {
+        long interval = connected ? HEARTBEAT_INTERVAL_NANOS : RECONNECT_INTERVAL_NANOS;
+        if (heartbeatInFlight || (lastHeartbeat != 0 && now - lastHeartbeat < interval)) {
             return;
         }
         lastHeartbeat = now;
         heartbeatInFlight = true;
         int gen = generation;
-        executor.submit(() -> {
-            try {
-                probe();
-            } catch (IOException e) {
-                if (gen == generation) {
-                    fail("Lost connection to TetrisServer (" + rootMessage(e) + ").");
+        try {
+            executor.submit(() -> {
+                try {
+                    probe();
+                    if (gen == generation) {
+                        markConnected();
+                    }
+                } catch (IOException e) {
+                    if (gen == generation) {
+                        markDisconnected("TetrisServer is not running (" + rootMessage(e) + ")");
+                    }
+                } finally {
+                    if (gen == generation) {
+                        heartbeatInFlight = false;
+                    }
                 }
-            } finally {
-                if (gen == generation) {
-                    heartbeatInFlight = false;
-                }
-            }
-        });
+            });
+        } catch (java.util.concurrent.RejectedExecutionException e) {
+            heartbeatInFlight = false; //shut down
+        }
     }
 
     private void requestMove(GameController controller, Tetromino piece) {
@@ -195,9 +226,11 @@ public class ExternalPlayer {
                     throw new IllegalStateException("stale");
                 }
                 return move;
+            } catch (ProtocolException e) {
+                throw new IllegalStateException(e); //server is there, reply just unusable
             } catch (IOException e) {
                 if (gen == generation) {
-                    fail("Lost connection to TetrisServer (" + rootMessage(e) + ").");
+                    markDisconnected("Lost connection to TetrisServer (" + rootMessage(e) + ")");
                 }
                 throw new IllegalStateException(e);
             }
@@ -214,22 +247,25 @@ public class ExternalPlayer {
             out.println(json);
             String line = in.readLine();
             if (line == null || line.isBlank()) {
-                throw new IOException("server closed the connection");
+                throw new ProtocolException("server closed the connection");
             }
             Matcher x = OP_X.matcher(line);
             Matcher r = OP_ROTATE.matcher(line);
             if (!x.find() || !r.find()) {
-                throw new IOException("unexpected reply from server");
+                throw new ProtocolException("unexpected reply from server");
             }
             return new Move(Integer.parseInt(x.group(1)), Integer.parseInt(r.group(1)));
         }
     }
 
-    private void fail(String reason) {
-        if (!failed) {
-            failureReason = reason;
-            failed = true;
-        }
+    private void markDisconnected(String reason) {
+        disconnectReason = reason;
+        connected = false;
+    }
+
+    private void markConnected() {
+        connected = true;
+        disconnectReason = "";
     }
 
     private static String rootMessage(Throwable t) {
