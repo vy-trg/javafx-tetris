@@ -2,10 +2,10 @@
   "width": 10,
   "height": 20,
   "level": 1,
-  "musicEnabled": false,
+  "musicEnabled": true,
   "soundEnabled": true,
   "aiPlay": false,
-  "extendMode": true,
-  "player1Type": "EXTERNAL",
-  "player2Type": "AI"
+  "extendMode": false,
+  "player1Type": "HUMAN",
+  "player2Type": "HUMAN"
 }
