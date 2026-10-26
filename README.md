@@ -140,4 +140,4 @@ Built by a team of three:
 
 ---
 
-*Originally developed in a shared team repository; this copy is maintained for portfolio purposes.*
+*Originally developed in a shared team repository*
