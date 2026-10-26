@@ -4,9 +4,9 @@ A feature-rich Tetris game built in **Java 21** and **JavaFX**, with an AI playe
 
 > Team project for a university Object-Oriented Software Development course (2026) — graded **100/100** (Milestone 1) and **96/100** (Final).
 
-<!-- Uncomment once docs/gameplay.gif is added:
-![Gameplay](docs/gameplay.gif)
--->
+<p align="center">
+  <img src="docs/gameplay.gif" alt="Two AI players competing in two-player mode" width="640">
+</p>
 
 📺 **Demo videos:** [Milestone 1](https://www.youtube.com/watch?v=NxlvT8MpbKM) · [Final submission](https://www.youtube.com/watch?v=xKUyLLbiOf4)
 
@@ -60,48 +60,20 @@ mvn test               # run the test suite
 
 ## Architecture
 
-The project follows **Model–View–Controller**. `GameController` contains all game rules and has **no JavaFX dependency** — it talks to the UI only through `Runnable` / `IntConsumer` callbacks, so the game engine can be unit-tested without a UI.
+The project follows **Model–View–Controller**. `GameController` contains all game rules and has **no JavaFX dependency** — the View calls its command methods (`handleMoveLeft()`, `handleRotate()`, `tick()`…) and the Controller reports events back only through `Runnable` / `IntConsumer` callbacks, so the game engine can be unit-tested without a UI.
 
-```mermaid
-flowchart LR
-    subgraph View
-        GS["GameScreen"]
-        TP["TwoPlayerGameScreen"]
-        MENU["MainMenu / ConfigurationScreen / HighScoresScreen"]
-    end
-    subgraph Controller
-        GC["GameController"]
-        ST["GameState<br/>Playing / Paused / GameOver"]
-        AI["AIPlayer"]
-        EX["ExternalPlayer"]
-        SEQ["TetrominoSequence"]
-    end
-    subgraph Model
-        B["Board"]
-        F["TetrominoFactory"]
-        T["Tetromino + 7 pieces"]
-    end
-    subgraph Services
-        CM["ConfigurationManager"]
-        HM["HighScoreManager"]
-        SM["SoundManager"]
-    end
+![MVC overview](docs/mvc-diagram.png)
 
-    GS -- "input / tick" --> GC
-    TP -- "input / tick" --> GC
-    GC -- "callbacks" --> GS
-    GC --> ST
-    GC --> B
-    GC --> F --> T
-    GC --> AI
-    GC --> EX -- "TCP :3000" --> SRV[("External server")]
-    TP -. "shared sequence" .-> SEQ
-    GS --> SM
-    MENU --> CM -- "config.json" --> DISK[("JSON files")]
-    MENU --> HM -- "scores.json" --> DISK
-```
+<details>
+<summary><b>Full class diagram</b></summary>
+
+![Class diagram](docs/class-diagram.png)
+
+</details>
 
 ### Design patterns
+
+![State pattern](docs/state-pattern.png)
 
 | Pattern | Where | Why |
 |---|---|---|
@@ -168,4 +140,4 @@ Built by a team of three:
 
 ---
 
-*This repository is a portfolio copy of the original team repository, shared with the agreement of all team members. Course-provided materials are not included.*
+*Originally developed in a shared team repository; this copy is maintained for portfolio purposes.*
