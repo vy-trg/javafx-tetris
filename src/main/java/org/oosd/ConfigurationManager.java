@@ -144,7 +144,7 @@ public class ConfigurationManager {
         try {
             Files.writeString(CONFIG_FILE, json);
         } catch (IOException e) {
-            System.out.println("Could not save config.json: "
+            System.err.println("Could not save config.json: "
                     + e.getMessage());
         }
     }
@@ -187,7 +187,7 @@ public class ConfigurationManager {
 
         } catch (Exception e) {
 
-            System.out.println(
+            System.err.println(
                     "Could not load config.json. Using defaults."
             );
         }

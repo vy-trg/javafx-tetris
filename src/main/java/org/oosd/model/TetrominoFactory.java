@@ -3,7 +3,9 @@ package org.oosd.model;
 import java.util.Random;
 
 /**
- * Enhanced switch EXPRESSION usage (Milestone 1 rubric requirement).
+ * Creates tetrominoes from a TetrominoType so callers never depend on the
+ * concrete piece classes. The switch expression has no default branch, so
+ * the compiler flags any new TetrominoType that is not handled here.
  */
 public class TetrominoFactory {
 

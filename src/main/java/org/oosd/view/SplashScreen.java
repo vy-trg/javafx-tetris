@@ -1,3 +1,5 @@
+package org.oosd.view;
+
 import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;

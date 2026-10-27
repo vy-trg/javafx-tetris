@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.oosd</groupId>
-    <artifactId>Animination</artifactId>
+    <artifactId>javafx-tetris</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -45,7 +45,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>Main</mainClass>
+                    <mainClass>org.oosd.view.Main</mainClass>
                 </configuration>
             </plugin>
             <plugin>
@@ -55,7 +55,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>Main</mainClass> <!-- replace with your actual class -->
+                            <mainClass>org.oosd.view.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

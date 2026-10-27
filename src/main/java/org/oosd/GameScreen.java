@@ -25,7 +25,7 @@ import javafx.scene.shape.Rectangle;
 
 import java.util.Optional;
 
-// Game Play screen (rubric items 15, 16, 17) - View only. All the game
+// Single-player game screen - View only. All the game
 // rules/state now live in GameController; this class just draws whatever
 // it reports and turns key presses / timer ticks into calls on it.
 public class GameScreen {
@@ -245,7 +245,6 @@ public class GameScreen {
         });
     }
 
-    // TODO(Tasmia): wire this to real high-score persistence once it exists - done
     private void recordHighScore(
             String playerName,
             int finalScore) {

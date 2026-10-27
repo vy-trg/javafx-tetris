@@ -10,7 +10,7 @@ package org.oosd.controller;
  * itself decides what happens (or doesn't) and whether to switch the
  * controller to a different state.
  *
- * This is the exact shape taught in the State pattern lecture (state.pdf):
+ * This is the classic State pattern:
  * a context (GameController) holds a State, and delegates behaviour to it
  * rather than branching on flags.
  */

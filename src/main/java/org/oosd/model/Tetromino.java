@@ -1,7 +1,6 @@
 package org.oosd.model;
 
 /**
- * Abstract class usage (Milestone 1 rubric requirement).
  * Holds everything common to every falling piece (position, rotation state,
  * type/color). Each concrete shape only supplies its own 4 rotation states.
  */

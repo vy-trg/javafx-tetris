@@ -103,7 +103,7 @@ public class HighScoreManager {
 
         } catch (IOException e) {
 
-            System.out.println(
+            System.err.println(
                     "Could not save scores.json: "
                             + e.getMessage()
             );
@@ -159,7 +159,7 @@ public class HighScoreManager {
 
         } catch (Exception e) {
 
-            System.out.println(
+            System.err.println(
                     "Could not load scores.json."
             );
         }

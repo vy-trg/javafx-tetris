@@ -2,10 +2,8 @@
 
 [![Tests](https://github.com/vy-trg/javafx-tetris/actions/workflows/tests.yml/badge.svg)](https://github.com/vy-trg/javafx-tetris/actions/workflows/tests.yml)
 
-A feature-rich Tetris game built in **Java 21** and **JavaFX**, with an AI player, a networked external player, two-player mode, JSON persistence and unit-tested game logic. Designed around **MVC**, **SOLID/GRASP** principles and classic **OOP design patterns**.
+A Tetris-style game in **Java 21** and **JavaFX** with an AI player, two-player mode and a networked player. Built by a team of 3; I built the game engine, the AI, two-player mode and the test suite ([details](#team--contributions)).
 
-> **My role:** core gameplay engine, AI player, two-player mode, State pattern and the full test suite — see [my contributions](#team--contributions).
->
 > Team project for a university Object-Oriented Software Development course (2026), graded **100/100** (Milestone 1) and **96/100** (Final).
 
 <p align="center">
@@ -83,7 +81,7 @@ The project follows **Model–View–Controller**. `GameController` contains all
 [`AIPlayer`](src/main/java/org/oosd/controller/AIPlayer.java) is a **heuristic search** (not machine learning):
 
 1. When a new piece spawns, it tries **every rotation × every column** on a cloned copy of the board, drops the piece, and clears any full rows.
-2. Each resulting board is scored with a weighted sum of four features: **aggregate height**, **lines cleared**, **holes** and **bumpiness** (height difference between neighbouring columns). The weights come from a well-known published Tetris AI heuristic.
+2. Each resulting board is scored with a weighted sum of four features: **aggregate height**, **lines cleared**, **holes** and **bumpiness** (height difference between neighbouring columns). The four weights are taken from Yiyuan Lee's article [*Tetris AI – The (Near) Perfect Bot*](https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/) (2013), which tuned them with a genetic algorithm.
 3. The highest-scoring placement becomes the target. The AI then reaches it **one move at a time** through the same `handleRotate()` / `handleMoveLeft()` / `handleSoftDrop()` calls a human key press uses, so its moves are visible and it obeys exactly the same game rules.
 
 ## Design patterns
@@ -123,9 +121,9 @@ The project follows **Model–View–Controller**. `GameController` contains all
 ```
 src/
 ├── main/java/
-│   ├── Main.java, SplashScreen.java, MainMenu.java,
-│   │   ConfigurationScreen.java, HighScoresScreen.java
 │   └── org/oosd/
+│       ├── view/         Main, SplashScreen, MainMenu,
+│       │                 ConfigurationScreen, HighScoresScreen
 │       ├── GameScreen.java, TwoPlayerGameScreen.java
 │       ├── ConfigurationManager.java, HighScoreManager.java
 │       ├── audio/        SoundManager
@@ -156,3 +154,5 @@ Built by a team of three.
 ---
 
 *Originally developed in a shared team repository.*
+
+*Unofficial fan project made for learning. Not affiliated with or endorsed by The Tetris Company.*

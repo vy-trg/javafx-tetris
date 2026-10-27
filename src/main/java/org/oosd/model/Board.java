@@ -34,7 +34,6 @@ public class Board {
     }
 
     /**
-     * Record type usage (Milestone 1 rubric requirement).
      * Immutable result of a row-clear check: how many rows were cleared and
      * how many points that earns. Naturally a simple data carrier, no
      * behaviour attached, so a record fits better than a full class.
@@ -71,8 +70,8 @@ public class Board {
     }
 
     /**
-     * Enhanced for-loop usage (Milestone 1 rubric requirement) to scan the
-     * board and find/clear every completed row.
+     * Finds every completed row, removes it and shifts the rows above down,
+     * then returns how many rows were cleared and the points they earn.
      */
     public RowClearResult clearFullRows() {
         List<Integer> fullRows = new ArrayList<>();

@@ -110,7 +110,7 @@ public final class SoundManager {
 
         URL url = findResource(MUSIC_BASE_NAME);
         if (url == null) {
-            System.out.println("[SoundManager] No background music file found under src/main/resources/audio/"
+            System.err.println("[SoundManager] No background music file found under src/main/resources/audio/"
                     + " (expected " + MUSIC_BASE_NAME + ".wav/.mp3/.m4a/.aiff) - music will stay silent until one is added.");
             return;
         }
@@ -120,7 +120,7 @@ public final class SoundManager {
             musicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
             musicPlayer.setVolume(0.5);
         } catch (Exception e) {
-            System.out.println("[SoundManager] Could not load background music: " + e.getMessage());
+            System.err.println("[SoundManager] Could not load background music: " + e.getMessage());
             musicPlayer = null;
         }
     }
@@ -148,14 +148,14 @@ public final class SoundManager {
     private AudioClip loadClip(Sound sound) {
         URL url = findResource(sound.baseName);
         if (url == null) {
-            System.out.println("[SoundManager] No sound file found under src/main/resources/audio/"
+            System.err.println("[SoundManager] No sound file found under src/main/resources/audio/"
                     + " (expected " + sound.baseName + ".wav/.mp3/.m4a/.aiff) - skipping this effect until one is added.");
             return null;
         }
         try {
             return new AudioClip(url.toExternalForm());
         } catch (Exception e) {
-            System.out.println("[SoundManager] Could not load sound '" + sound.baseName + "': " + e.getMessage());
+            System.err.println("[SoundManager] Could not load sound '" + sound.baseName + "': " + e.getMessage());
             return null;
         }
     }
