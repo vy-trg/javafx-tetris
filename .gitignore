@@ -20,3 +20,7 @@ target/
 
 # Course-provided binaries (e.g. the external player server)
 *.jar
+
+# Runtime data (created automatically on first run)
+config.json
+scores.json
