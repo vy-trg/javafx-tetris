@@ -12,7 +12,7 @@ A Tetris-style game in **Java 21** and **JavaFX** with an AI player, two-player 
   <sub>Two-player mode with an AI on each side. Both boards receive the same piece sequence, so identical pieces are expected.</sub>
 </p>
 
-📺 **Demo videos:** [Milestone 1](https://www.youtube.com/watch?v=NxlvT8MpbKM) · [Final submission](https://www.youtube.com/watch?v=xKUyLLbiOf4)
+📺 **Demo video:** [Watch on YouTube](https://www.youtube.com/watch?v=xKUyLLbiOf4)
 
 ---
 
