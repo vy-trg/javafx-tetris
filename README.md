@@ -135,6 +135,14 @@ src/
                           GameController tests
 ```
 
+## Credits
+
+| Asset | Author | Licence |
+|---|---|---|
+| Background music: [*Chiploop*](https://opengameart.org/content/chiploop) | iamoneabe | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| Sound effects: [*Interface Sounds*](https://kenney.nl/assets/interface-sounds) | Kenney | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| AI evaluation weights | Yiyuan Lee | See [How the AI works](#how-the-ai-works) |
+
 ## Team & Contributions
 
 Built by a team of three.
