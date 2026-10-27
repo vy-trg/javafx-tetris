@@ -36,7 +36,7 @@ A Tetris-style game in **Java 21** and **JavaFX** with an AI player, two-player 
 | Build | Maven |
 | Testing | JUnit 5 (incl. parameterized tests), Mockito |
 | CI | GitHub Actions (runs the test suite on every push) |
-| Version control | Git / GitHub (feature branches, pull requests, code review, tags) |
+| Version control | Git / GitHub (feature branches, pull requests and code review in the original team repo) |
 
 ## Getting Started
 
@@ -106,11 +106,13 @@ The project follows **Model–View–Controller**. `GameController` contains all
 
 ## Testing
 
-**16 unit tests, all passing**, run automatically on every push by GitHub Actions. They target the pure-logic classes, so they run in milliseconds without a UI:
+**21 unit tests, all passing**, run automatically on every push by GitHub Actions. They target the pure-logic classes, so they run in milliseconds without a UI:
 
 - [`BoardTest`](src/test/java/org/oosd/model/BoardTest.java) — default and custom grid sizes, row clearing and scoring, reset
 - [`ConfigurationManagerTest`](src/test/java/org/oosd/ConfigurationManagerTest.java) — validated setters (e.g. rejecting out-of-range widths)
 - [`HighScoreManagerTest`](src/test/java/org/oosd/HighScoreManagerTest.java) — descending sort, top-10 cap, blank-name handling
+- [`AIPlayerTest`](src/test/java/org/oosd/controller/AIPlayerTest.java) — AI finds the well and clears four lines at once; survives 100 pieces on a standard board (uses stub piece sequences for deterministic results)
+- [`TetrominoSequenceTest`](src/test/java/org/oosd/controller/TetrominoSequenceTest.java) — two players sharing a sequence get identical pieces; 8 threads reading concurrently all see the same order
 - [`GameControllerAdvancedTest`](src/test/java/org/oosd/controller/GameControllerAdvancedTest.java)
   - **Parameterized test** (`@ParameterizedTest` + `@CsvSource`) across 5×15, 10×20 and 15×30 boards
   - **Hand-written stub** recording how many times the game-over callback fires
@@ -132,7 +134,7 @@ src/
 │       └── model/        Board, Tetromino, Rotatable, TetrominoFactory,
 │                         TetrominoType, I/J/L/O/S/T/Z pieces
 └── test/java/org/oosd/   Board, ConfigurationManager, HighScoreManager,
-                          GameController tests
+                          GameController, AIPlayer, TetrominoSequence tests
 ```
 
 ## Credits

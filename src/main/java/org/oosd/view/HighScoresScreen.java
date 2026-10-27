@@ -61,10 +61,8 @@ public class HighScoresScreen {
         playerColumn.setPrefWidth(300);
         scoreColumn.setPrefWidth(200);
 
-        table.getColumns().addAll(
-                playerColumn,
-                scoreColumn
-        );
+        table.getColumns().add(playerColumn);
+        table.getColumns().add(scoreColumn);
 
         loadScores(table);
 
