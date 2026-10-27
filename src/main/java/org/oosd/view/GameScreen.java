@@ -1,5 +1,6 @@
-package org.oosd;
+package org.oosd.view;
 
+import org.oosd.HighScoreManager;
 import org.oosd.audio.SoundManager;
 import org.oosd.controller.GameController;
 import org.oosd.model.Board;

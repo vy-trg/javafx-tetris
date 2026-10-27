@@ -15,8 +15,6 @@ import javafx.stage.Stage;
 
 import java.util.Optional;
 
-import org.oosd.GameScreen;
-import org.oosd.TwoPlayerGameScreen;
 import org.oosd.ConfigurationManager;
 import org.oosd.controller.ExternalPlayer;
 

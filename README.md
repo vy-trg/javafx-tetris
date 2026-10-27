@@ -124,9 +124,8 @@ The project follows **Model–View–Controller**. `GameController` contains all
 src/
 ├── main/java/
 │   └── org/oosd/
-│       ├── view/         Main, SplashScreen, MainMenu,
-│       │                 ConfigurationScreen, HighScoresScreen
-│       ├── GameScreen.java, TwoPlayerGameScreen.java
+│       ├── view/         Main, SplashScreen, MainMenu, GameScreen,
+│       │                 TwoPlayerGameScreen, ConfigurationScreen, HighScoresScreen
 │       ├── ConfigurationManager.java, HighScoreManager.java
 │       ├── audio/        SoundManager
 │       ├── controller/   GameController, GameState + 3 states,
@@ -150,9 +149,9 @@ src/
 Built by a team of three.
 
 **Vy Truong** ([@vy-trg](https://github.com/vy-trg))
-- **Gameplay engine (Milestone 1):** [`Board`](src/main/java/org/oosd/model/Board.java), the [`Tetromino`](src/main/java/org/oosd/model/Tetromino.java) model (abstract class, `Rotatable` interface, 7 pieces, `TetrominoFactory`) and [`GameScreen`](src/main/java/org/oosd/GameScreen.java) rendering, controls, pause and row clearing — delivered through a feature branch and reviewed pull request
+- **Gameplay engine (Milestone 1):** [`Board`](src/main/java/org/oosd/model/Board.java), the [`Tetromino`](src/main/java/org/oosd/model/Tetromino.java) model (abstract class, `Rotatable` interface, 7 pieces, `TetrominoFactory`) and [`GameScreen`](src/main/java/org/oosd/view/GameScreen.java) rendering, controls, pause and row clearing — delivered through a feature branch and reviewed pull request
 - **AI player:** [`AIPlayer`](src/main/java/org/oosd/controller/AIPlayer.java) placement search and evaluation
-- **Two-player mode:** [`TwoPlayerGameScreen`](src/main/java/org/oosd/TwoPlayerGameScreen.java) and the thread-safe shared piece sequence [`TetrominoSequence`](src/main/java/org/oosd/controller/TetrominoSequence.java)
+- **Two-player mode:** [`TwoPlayerGameScreen`](src/main/java/org/oosd/view/TwoPlayerGameScreen.java) and the thread-safe shared piece sequence [`TetrominoSequence`](src/main/java/org/oosd/controller/TetrominoSequence.java)
 - **Dynamic board sizing**
 - **Design:** MVC structure and the State pattern ([`GameState`](src/main/java/org/oosd/controller/GameState.java) and its implementations)
 - **Testing:** all [unit tests](src/test/java/org/oosd), including parameterized tests, a hand-written stub and Mockito mocks
